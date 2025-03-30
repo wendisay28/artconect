@@ -11,6 +11,11 @@ const firebaseAppId = typeof import.meta.env !== 'undefined' ? import.meta.env.V
 // Verifica si tenemos las variables necesarias, de lo contrario usa valores vacíos (solo para desarrollo)
 const hasRequiredEnvVars = firebaseApiKey && firebaseProjectId && firebaseAppId;
 
+console.log("Firebase Auth Domain Info:", {
+  domain: window.location.hostname,
+  projectId: firebaseProjectId
+});
+
 // Configuración de Firebase
 const firebaseConfig = {
   apiKey: firebaseApiKey || "",

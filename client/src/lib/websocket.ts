@@ -47,42 +47,50 @@ export function useWebSocket() {
     
     // Create WebSocket with correct protocol based on current connection
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    // Use window.location.host to get the correct host including port
     const wsUrl = `${protocol}//${window.location.host}/ws`;
     
-    const ws = new WebSocket(wsUrl);
+    console.log("Connecting to WebSocket URL:", wsUrl);
     
-    ws.onopen = () => {
-      setStatus('open');
-      console.log('WebSocket connection established');
-    };
-    
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data) as WebSocketMessage;
-        setMessages(prev => [...prev, data]);
-      } catch (error) {
-        console.error('Failed to parse WebSocket message:', error);
-      }
-    };
-    
-    ws.onclose = () => {
-      setStatus('closed');
-      console.log('WebSocket connection closed');
+    try {
+      const ws = new WebSocket(wsUrl);
       
-      // Attempt to reconnect after 2 seconds
-      setTimeout(() => {
-        if (status !== 'closed') {
-          connect();
+      ws.onopen = () => {
+        setStatus('open');
+        console.log('WebSocket connection established');
+      };
+      
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data) as WebSocketMessage;
+          setMessages(prev => [...prev, data]);
+        } catch (error) {
+          console.error('Failed to parse WebSocket message:', error);
         }
-      }, 2000);
-    };
-    
-    ws.onerror = (error) => {
+      };
+      
+      ws.onclose = () => {
+        setStatus('closed');
+        console.log('WebSocket connection closed');
+        
+        // Attempt to reconnect after 2 seconds
+        setTimeout(() => {
+          if (status !== 'closed') {
+            connect();
+          }
+        }, 2000);
+      };
+      
+      ws.onerror = (error) => {
+        setStatus('error');
+        console.error('WebSocket error:', error);
+      };
+      
+      socket.current = ws;
+    } catch (error) {
+      console.error('Failed to create WebSocket connection:', error);
       setStatus('error');
-      console.error('WebSocket error:', error);
-    };
-    
-    socket.current = ws;
+    }
   }, [status]);
 
   // Disconnect WebSocket

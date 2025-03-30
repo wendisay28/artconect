@@ -18,7 +18,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { toast } = useToast();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      console.log("Auth state changed:", user ? "User logged in" : "No user");
+      
+      if (user) {
+        try {
+          // Si el usuario está autenticado, intentar obtener el token
+          const token = await user.getIdToken();
+          console.log("User authenticated with token available");
+          
+          // Guardar el token JWT en localStorage (opcional)
+          localStorage.setItem('auth_token', token);
+        } catch (error) {
+          console.error("Error getting auth token:", error);
+        }
+      } else {
+        // Limpiar el token si no hay usuario
+        localStorage.removeItem('auth_token');
+      }
+      
       setUser(user);
       setLoading(false);
     });
