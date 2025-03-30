@@ -499,10 +499,10 @@ export default function ProfilePage() {
                         Cerrar sesión
                       </Button>
                     </DialogTrigger>
-                    <DialogContent>
+                    <DialogContent aria-describedby="logout-dialog-description">
                       <DialogHeader>
-                        <DialogTitle>¿Cerrar sesión?</DialogTitle>
-                        <DialogDescription>
+                        <DialogTitle id="logout-dialog-title">¿Cerrar sesión?</DialogTitle>
+                        <DialogDescription id="logout-dialog-description">
                           ¿Estás seguro de que quieres cerrar sesión en ArtistConnect?
                         </DialogDescription>
                       </DialogHeader>
@@ -520,10 +520,10 @@ export default function ProfilePage() {
                         Eliminar cuenta
                       </Button>
                     </AlertDialogTrigger>
-                    <AlertDialogContent>
+                    <AlertDialogContent aria-describedby="alert-dialog-description">
                       <AlertDialogHeader>
-                        <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
-                        <AlertDialogDescription>
+                        <AlertDialogTitle id="alert-dialog-title">¿Estás absolutamente seguro?</AlertDialogTitle>
+                        <AlertDialogDescription id="alert-dialog-description">
                           Esta acción no se puede deshacer. Eliminará permanentemente tu cuenta y eliminará tus datos de nuestros servidores.
                         </AlertDialogDescription>
                       </AlertDialogHeader>

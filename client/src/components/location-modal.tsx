@@ -56,13 +56,13 @@ export default function LocationModal({ onComplete }: LocationModalProps) {
 
   return (
     <Dialog open={true} onOpenChange={() => {}}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" aria-describedby="location-dialog-description">
         <div className="text-center mb-6">
           <div className="flex justify-center">
             <MapPin className="h-12 w-12 text-primary" />
           </div>
-          <DialogTitle className="text-2xl font-bold mt-4">Permitir acceso a ubicación</DialogTitle>
-          <DialogDescription className="text-muted-foreground mt-2">
+          <DialogTitle className="text-2xl font-bold mt-4" id="location-dialog-title">Permitir acceso a ubicación</DialogTitle>
+          <DialogDescription id="location-dialog-description" className="text-muted-foreground mt-2">
             Necesitamos tu ubicación para mostrarte artistas y eventos cerca de ti
           </DialogDescription>
         </div>

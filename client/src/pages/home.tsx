@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { ChevronRight, Search, Bell, BookmarkCheck, Share2 } from "lucide-react";
+import { ChevronRight, ChevronLeft, Search, Bell, BookmarkCheck, Share2 } from "lucide-react";
 
 // Definición de tipos para los datos de API
 interface Event {
@@ -60,6 +60,7 @@ interface BannerItem {
 export default function HomePage() {
   const { locationData } = useLocation();
   const { toast } = useToast();
+  const [activeBlogIndex, setActiveBlogIndex] = useState(0);
   
   const { data: featuredEvents, isLoading: isLoadingEvents } = useQuery<Event[]>({
     queryKey: ['/api/events/featured'],
@@ -195,7 +196,7 @@ export default function HomePage() {
         </div>
         
         {isLoadingNearbyEvents ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
             {Array(3).fill(0).map((_, i) => (
               <Skeleton key={i} className="h-48 w-full rounded-lg" />
             ))}
@@ -208,7 +209,7 @@ export default function HomePage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
             {safeNearbyEvents.map(event => (
               <EventCard
                 key={event.id}
@@ -240,57 +241,103 @@ export default function HomePage() {
           </Link>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {isLoadingBlogPosts ? (
-            Array(2).fill(0).map((_, i) => (
-              <Card key={i} className="overflow-hidden">
-                <Skeleton className="h-40 w-full" />
-                <CardContent className="p-4">
-                  <Skeleton className="h-3 w-16 mb-1" />
-                  <Skeleton className="h-5 w-full mb-2" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-3/4 mt-1" />
-                </CardContent>
-              </Card>
-            ))
-          ) : (
-            safeBlogPosts.map(post => (
-              <Card key={post.id} className="overflow-hidden">
-                <div className="relative h-40">
-                  <img 
-                    src={post.imageUrl || "https://via.placeholder.com/600x300"}
-                    alt={post.title} 
-                    className="w-full h-full object-cover"
-                  />
+        {isLoadingBlogPosts ? (
+          <div className="relative">
+            <Skeleton className="h-[320px] w-full rounded-lg" />
+            <div className="absolute top-1/2 left-4 -translate-y-1/2 z-10">
+              <Skeleton className="h-10 w-10 rounded-full" />
+            </div>
+            <div className="absolute top-1/2 right-4 -translate-y-1/2 z-10">
+              <Skeleton className="h-10 w-10 rounded-full" />
+            </div>
+          </div>
+        ) : (
+          <div className="relative">
+            {safeBlogPosts.length > 0 && (
+              <div className="overflow-hidden rounded-lg">
+                <div id="blog-carousel" className="relative">
+                  {/* Blog post content */}
+                  <div className="flex transition-transform duration-300 ease-in-out" 
+                       style={{ transform: `translateX(-${activeBlogIndex * 100}%)` }}>
+                    {safeBlogPosts.map(post => (
+                      <div key={post.id} className="w-full flex-shrink-0">
+                        <Card className="border-0 overflow-hidden">
+                          <div className="relative h-40 sm:h-60">
+                            <img 
+                              src={post.imageUrl || "https://via.placeholder.com/600x300"}
+                              alt={post.title} 
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <CardContent className="p-4">
+                            <p className="text-muted-foreground text-xs mb-1">
+                              {new Date(post.date).toLocaleDateString('es-ES', { 
+                                day: 'numeric', 
+                                month: 'long', 
+                                year: 'numeric' 
+                              })}
+                            </p>
+                            <h3 className="font-semibold">{post.title}</h3>
+                            <p className="text-muted-foreground text-sm mt-1 line-clamp-2">
+                              {post.excerpt}
+                            </p>
+                            <Link href={`/blog/${post.id}`} className="block">
+                              <span className="text-primary text-sm mt-2 inline-block cursor-pointer">
+                                Leer más
+                              </span>
+                            </Link>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* Navigation buttons */}
+                  {safeBlogPosts.length > 1 && (
+                    <>
+                      <Button 
+                        variant="secondary" 
+                        size="icon" 
+                        className="absolute top-1/2 left-4 -translate-y-1/2 z-10 rounded-full bg-background/80 hover:bg-background"
+                        onClick={() => setActiveBlogIndex(prev => (prev > 0 ? prev - 1 : safeBlogPosts.length - 1))}
+                      >
+                        <ChevronLeft className="h-5 w-5" />
+                      </Button>
+                      <Button 
+                        variant="secondary" 
+                        size="icon" 
+                        className="absolute top-1/2 right-4 -translate-y-1/2 z-10 rounded-full bg-background/80 hover:bg-background"
+                        onClick={() => setActiveBlogIndex(prev => (prev < safeBlogPosts.length - 1 ? prev + 1 : 0))}
+                      >
+                        <ChevronRight className="h-5 w-5" />
+                      </Button>
+                    </>
+                  )}
+                  
+                  {/* Dots indicator */}
+                  {safeBlogPosts.length > 1 && (
+                    <div className="flex justify-center gap-2 mt-4">
+                      {safeBlogPosts.map((_, i) => (
+                        <button
+                          key={i}
+                          className={`h-2 rounded-full transition-all ${i === activeBlogIndex ? 'w-6 bg-primary' : 'w-2 bg-primary/30'}`}
+                          onClick={() => setActiveBlogIndex(i)}
+                          aria-label={`Go to slide ${i + 1}`}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <CardContent className="p-4">
-                  <p className="text-muted-foreground text-xs mb-1">
-                    {new Date(post.date).toLocaleDateString('es-ES', { 
-                      day: 'numeric', 
-                      month: 'long', 
-                      year: 'numeric' 
-                    })}
-                  </p>
-                  <h3 className="font-semibold">{post.title}</h3>
-                  <p className="text-muted-foreground text-sm mt-1 line-clamp-2">
-                    {post.excerpt}
-                  </p>
-                  <Link href={`/blog/${post.id}`} className="block">
-                    <span className="text-primary text-sm mt-2 inline-block cursor-pointer">
-                      Leer más
-                    </span>
-                  </Link>
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </div>
+              </div>
+            )}
+          </div>
+        )}
       </section>
       
       {/* Shop Section */}
       <section>
         <div className="flex justify-between items-center mb-4">
-          <h2 className="font-semibold text-xl">Tienda de Artistas</h2>
+          <h2 className="font-semibold text-xl">Tienda de Productos</h2>
           <Link href="/shop" className="block">
             <span className="text-primary text-sm flex items-center cursor-pointer">
               Ver todo
