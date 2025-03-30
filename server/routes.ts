@@ -2,7 +2,7 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer } from "ws";
 import { FirebaseStorage } from "./storage";
-import { auth } from "@/lib/firebase";
+import { auth } from "../client/src/lib/firebase";
 import { z } from "zod";
 import { insertUserSchema, insertArtistSchema, insertEventSchema, insertFavoriteSchema, insertServiceRequestSchema, insertServiceSchema, insertMessageSchema, insertProductSchema } from "@shared/schema";
 
