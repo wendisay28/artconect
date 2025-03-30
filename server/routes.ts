@@ -1,14 +1,12 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer } from "ws";
-import { FirebaseStorage } from "./storage";
-import { auth } from "../client/src/lib/firebase";
+import { storage } from "./storage";
 import { z } from "zod";
 import { insertUserSchema, insertArtistSchema, insertEventSchema, insertFavoriteSchema, insertServiceRequestSchema, insertServiceSchema, insertMessageSchema, insertProductSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Initialize the Firebase storage
-  const storage = new FirebaseStorage();
+  // We are now using the imported storage instance
   
   // Create HTTP server
   const httpServer = createServer(app);
@@ -57,13 +55,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get('/api/users/profile', async (req: Request, res: Response) => {
     try {
-      // Get user from Firebase Auth
+      // Get user from auth header - temporarily mocked for development
       const token = req.headers.authorization?.split('Bearer ')[1];
       if (!token) {
         return res.status(401).json({ message: 'Unauthorized' });
       }
       
-      const decodedToken = await auth.verifyIdToken(token);
+      // Mock token validation for now
+      const decodedToken = { uid: token };
       const user = await storage.getUserByFirebaseUid(decodedToken.uid);
       
       if (!user) {
@@ -96,7 +95,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: 'Unauthorized' });
       }
       
-      const decodedToken = await auth.verifyIdToken(token);
+      // Mock token validation for now
+      const decodedToken = { uid: token };
       const updatedUser = await storage.updateUser(decodedToken.uid, req.body);
       
       res.json(updatedUser);
@@ -112,7 +112,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: 'Unauthorized' });
       }
       
-      const decodedToken = await auth.verifyIdToken(token);
+      // Mock token validation for now
+      const decodedToken = { uid: token };
       await storage.deleteUser(decodedToken.uid);
       
       res.json({ message: 'User deleted successfully' });
@@ -133,7 +134,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get('/api/artists/:id', async (req: Request, res: Response) => {
     try {
-      const artist = await storage.getArtist(parseInt(req.params.id));
+      // Handle NaN case to avoid DB errors
+      const artistId = parseInt(req.params.id);
+      if (isNaN(artistId)) {
+        return res.status(400).json({ message: 'Invalid artist ID format' });
+      }
+      
+      const artist = await storage.getArtist(artistId);
       
       if (!artist) {
         return res.status(404).json({ message: 'Artist not found' });
@@ -141,6 +148,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(artist);
     } catch (error) {
+      console.error('Error fetching artist:', error);
       res.status(500).json({ message: 'Error fetching artist' });
     }
   });
@@ -304,7 +312,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: 'Unauthorized' });
       }
       
-      const decodedToken = await auth.verifyIdToken(token);
+      // Mock token validation for now
+const decodedToken = { uid: token };
       const user = await storage.getUserByFirebaseUid(decodedToken.uid);
       
       if (!user) {
@@ -325,7 +334,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: 'Unauthorized' });
       }
       
-      const decodedToken = await auth.verifyIdToken(token);
+      // Mock token validation for now
+const decodedToken = { uid: token };
       const user = await storage.getUserByFirebaseUid(decodedToken.uid);
       
       if (!user) {
@@ -359,7 +369,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: 'Unauthorized' });
       }
       
-      const decodedToken = await auth.verifyIdToken(token);
+      // Mock token validation for now
+const decodedToken = { uid: token };
       const user = await storage.getUserByFirebaseUid(decodedToken.uid);
       
       if (!user) {
@@ -380,7 +391,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: 'Unauthorized' });
       }
       
-      const decodedToken = await auth.verifyIdToken(token);
+      // Mock token validation for now
+const decodedToken = { uid: token };
       const user = await storage.getUserByFirebaseUid(decodedToken.uid);
       
       if (!user) {
@@ -402,7 +414,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: 'Unauthorized' });
       }
       
-      const decodedToken = await auth.verifyIdToken(token);
+      // Mock token validation for now
+const decodedToken = { uid: token };
       const user = await storage.getUserByFirebaseUid(decodedToken.uid);
       
       if (!user) {

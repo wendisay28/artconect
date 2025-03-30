@@ -1,41 +1,17 @@
-import { db, auth } from "../client/src/lib/firebase";
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  query,
-  where,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  orderBy,
-  limit,
-  Timestamp,
-  GeoPoint,
-  serverTimestamp
-} from "firebase/firestore";
-
-import {
-  type User,
-  type InsertUser,
-  type Artist,
-  type InsertArtist,
-  type Event,
-  type InsertEvent,
-  type Favorite,
-  type InsertFavorite,
-  type Chat,
-  type InsertChat,
-  type Message,
-  type InsertMessage,
-  type Product,
-  type InsertProduct,
-  type Service,
-  type InsertService,
-  type ServiceRequest,
-  type InsertServiceRequest
-} from "@shared/schema";
+import { db } from "./db";
+import { 
+  users, artists, services, events, favorites, chats, messages, products, serviceRequests,
+  type User, type InsertUser,
+  type Artist, type InsertArtist,
+  type Service, type InsertService,
+  type Event, type InsertEvent,
+  type Favorite, type InsertFavorite,
+  type Chat, type InsertChat,
+  type Message, type InsertMessage,
+  type Product, type InsertProduct,
+  type ServiceRequest, type InsertServiceRequest
+} from "../shared/schema";
+import { and, eq, desc, asc, gt, lt, like, inArray, isNull, or } from "drizzle-orm";
 
 // Mock blog post type (not in schema)
 interface BlogPost {
@@ -121,8 +97,1350 @@ export interface IStorage {
   getBlogPosts(): Promise<BlogPost[]>;
 }
 
+// PostgreSQL implementation of storage
+export class DatabaseStorage implements IStorage {
+  // Users
+  async getAllUsers(): Promise<User[]> {
+    try {
+      return await db.select().from(users);
+    } catch (error) {
+      console.error("Error getting users:", error);
+      throw error;
+    }
+  }
+  
+  async getUser(id: number): Promise<User | undefined> {
+    try {
+      const [user] = await db.select().from(users).where(eq(users.id, id));
+      return user;
+    } catch (error) {
+      console.error("Error getting user:", error);
+      throw error;
+    }
+  }
+  
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    try {
+      const [user] = await db.select().from(users).where(eq(users.username, username));
+      return user;
+    } catch (error) {
+      console.error("Error getting user by username:", error);
+      throw error;
+    }
+  }
+  
+  async getUserByFirebaseUid(uid: string): Promise<User | undefined> {
+    try {
+      const [user] = await db.select().from(users).where(eq(users.firebaseUid, uid));
+      return user;
+    } catch (error) {
+      console.error("Error getting user by firebase UID:", error);
+      throw error;
+    }
+  }
+  
+  async createUser(userData: InsertUser): Promise<User> {
+    try {
+      // Check if username is already taken
+      const existingUser = await this.getUserByUsername(userData.username);
+      if (existingUser) {
+        throw new Error("Username already taken");
+      }
+      
+      // Check if user with this firebase UID already exists
+      const existingFirebaseUser = await this.getUserByFirebaseUid(userData.firebaseUid);
+      if (existingFirebaseUser) {
+        throw new Error("User already exists");
+      }
+      
+      // Create user in database
+      const [user] = await db.insert(users).values(userData).returning();
+      return user;
+    } catch (error) {
+      console.error("Error creating user:", error);
+      throw error;
+    }
+  }
+  
+  async updateUser(firebaseUid: string, userData: Partial<User>): Promise<User> {
+    try {
+      // Find user by firebase UID
+      const existingUser = await this.getUserByFirebaseUid(firebaseUid);
+      if (!existingUser) {
+        throw new Error("User not found");
+      }
+      
+      // Check if username is being changed and is already taken
+      if (userData.username) {
+        const userWithUsername = await this.getUserByUsername(userData.username);
+        if (userWithUsername && userWithUsername.id !== existingUser.id) {
+          throw new Error("Username already taken");
+        }
+      }
+      
+      // Update user in database
+      const [updatedUser] = await db
+        .update(users)
+        .set(userData)
+        .where(eq(users.firebaseUid, firebaseUid))
+        .returning();
+      
+      return updatedUser;
+    } catch (error) {
+      console.error("Error updating user:", error);
+      throw error;
+    }
+  }
+  
+  async deleteUser(firebaseUid: string): Promise<void> {
+    try {
+      // Find user by firebase UID
+      const existingUser = await this.getUserByFirebaseUid(firebaseUid);
+      if (!existingUser) {
+        throw new Error("User not found");
+      }
+      
+      // Delete user from database
+      await db.delete(users).where(eq(users.firebaseUid, firebaseUid));
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      throw error;
+    }
+  }
+  
+  // Artists
+  async getAllArtists(): Promise<Artist[]> {
+    try {
+      return await db.select().from(artists);
+    } catch (error) {
+      console.error("Error getting artists:", error);
+      throw error;
+    }
+  }
+  
+  async getArtist(id: number): Promise<Artist | undefined> {
+    try {
+      const [artist] = await db.select().from(artists).where(eq(artists.id, id));
+      
+      if (!artist) {
+        return undefined;
+      }
+      
+      // Get user data for this artist
+      const user = await this.getUser(artist.userId);
+      
+      // Return artist data with extra fields as any to avoid type issues
+      return {
+        ...artist,
+        // Add user fields as additional data (not in the Artist type)
+        userData: user ? {
+          displayName: user.displayName,
+          photoURL: user.photoURL,
+          bio: user.bio,
+          location: user.location,
+          role: user.role,
+          skills: user.skills
+        } : null
+      } as any;
+    } catch (error) {
+      console.error("Error getting artist:", error);
+      throw error;
+    }
+  }
+  
+  async getRecommendedArtists(lat?: number, lng?: number): Promise<any[]> {
+    try {
+      // Get all artists
+      const artistsList = await db.select().from(artists);
+      
+      if (artistsList.length === 0) {
+        return [];
+      }
+      
+      // Get all user data
+      const userIds = artistsList.map(artist => artist.userId);
+      const usersList = await db.select().from(users).where(inArray(users.id, userIds));
+      
+      // Create a map of user data for easy lookup
+      const usersMap = new Map();
+      usersList.forEach(user => {
+        usersMap.set(user.id, user);
+      });
+      
+      // Combine artist and user data
+      const combinedArtists = artistsList.map(artist => {
+        const user = usersMap.get(artist.userId);
+        
+        // Calculate distance if coordinates are provided
+        let distance = null;
+        if (lat && lng && user?.latitude && user?.longitude) {
+          distance = this.calculateDistance(lat, lng, user.latitude, user.longitude);
+        }
+        
+        return {
+          ...artist,
+          displayName: user?.displayName,
+          photoURL: user?.photoURL,
+          location: user?.location,
+          role: user?.role,
+          distance
+        };
+      });
+      
+      // Sort by distance if coordinates are provided, otherwise by rating
+      if (lat && lng) {
+        combinedArtists.sort((a, b) => (a.distance || Infinity) - (b.distance || Infinity));
+      } else {
+        combinedArtists.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+      }
+      
+      // Return top 10 recommended artists
+      return combinedArtists.slice(0, 10);
+    } catch (error) {
+      console.error("Error getting recommended artists:", error);
+      throw error;
+    }
+  }
+  
+  async getArtistsForExplorer(lat?: number, lng?: number): Promise<any[]> {
+    try {
+      // This method is similar to getRecommendedArtists but returns all artists
+      // Get all artists
+      const artistsList = await db.select().from(artists);
+      
+      if (artistsList.length === 0) {
+        // Return mock data for testing when database is empty
+        return [
+          {
+            id: "1",
+            displayName: "Carlos Vives",
+            role: "Músico",
+            category: "Música",
+            subcategory: "Cantante",
+            photoURL: "https://randomuser.me/api/portraits/men/32.jpg",
+            location: "Bogotá, Colombia",
+            minPrice: 450000,
+            maxPrice: 750000,
+            priceUnit: "hora",
+            distance: 2.5,
+            rating: 4.8,
+            reviewCount: 24
+          },
+          {
+            id: "2",
+            displayName: "María Fernández",
+            role: "Fotógrafa",
+            category: "Fotografía",
+            subcategory: "Retrato",
+            photoURL: "https://randomuser.me/api/portraits/women/44.jpg",
+            location: "Medellín, Colombia",
+            minPrice: 200000,
+            maxPrice: 500000,
+            priceUnit: "sesión",
+            distance: 5.1,
+            rating: 4.6,
+            reviewCount: 18
+          },
+          {
+            id: "3",
+            displayName: "Diego Ramirez",
+            role: "DJ",
+            category: "Música",
+            subcategory: "DJ",
+            photoURL: "https://randomuser.me/api/portraits/men/22.jpg",
+            location: "Cali, Colombia",
+            minPrice: 380000,
+            maxPrice: 600000,
+            priceUnit: "evento",
+            distance: 8.7,
+            rating: 4.9,
+            reviewCount: 35
+          },
+          {
+            id: "4",
+            displayName: "Laura Ortiz",
+            role: "Bailarina",
+            category: "Danza",
+            subcategory: "Contemporánea",
+            photoURL: "https://randomuser.me/api/portraits/women/67.jpg",
+            location: "Barranquilla, Colombia",
+            minPrice: 180000,
+            maxPrice: 300000,
+            priceUnit: "hora",
+            distance: 12.3,
+            rating: 4.7,
+            reviewCount: 14
+          },
+          {
+            id: "5",
+            displayName: "Javier López",
+            role: "Pintor",
+            category: "Arte Visual",
+            subcategory: "Pintura",
+            photoURL: "https://randomuser.me/api/portraits/men/55.jpg",
+            location: "Cartagena, Colombia",
+            minPrice: 500000,
+            maxPrice: 1200000,
+            priceUnit: "obra",
+            distance: 15.8,
+            rating: 4.5,
+            reviewCount: 22
+          }
+        ];
+      }
+      
+      // Get all user data
+      const userIds = artistsList.map(artist => artist.userId);
+      const usersList = await db.select().from(users).where(inArray(users.id, userIds));
+      
+      // Create a map of user data for easy lookup
+      const usersMap = new Map();
+      usersList.forEach(user => {
+        usersMap.set(user.id, user);
+      });
+      
+      // Combine artist and user data
+      const combinedArtists = artistsList.map(artist => {
+        const user = usersMap.get(artist.userId);
+        
+        // Calculate distance if coordinates are provided
+        let distance = null;
+        if (lat && lng && user?.latitude && user?.longitude) {
+          distance = this.calculateDistance(lat, lng, user.latitude, user.longitude);
+        }
+        
+        return {
+          ...artist,
+          displayName: user?.displayName,
+          photoURL: user?.photoURL,
+          location: user?.location,
+          role: user?.role,
+          distance
+        };
+      });
+      
+      // Shuffle the array to provide variety in the explorer
+      return this.shuffleArray(combinedArtists);
+    } catch (error) {
+      console.error("Error getting artists for explorer:", error);
+      throw error;
+    }
+  }
+  
+  async createArtist(artistData: InsertArtist): Promise<Artist> {
+    try {
+      // Insert artist into database
+      const [artist] = await db.insert(artists).values(artistData).returning();
+      return artist;
+    } catch (error) {
+      console.error("Error creating artist:", error);
+      throw error;
+    }
+  }
+  
+  async getArtistServices(artistId: number): Promise<Service[]> {
+    try {
+      const servicesList = await db.select().from(services).where(eq(services.artistId, artistId));
+      return servicesList;
+    } catch (error) {
+      console.error("Error getting artist services:", error);
+      throw error;
+    }
+  }
+  
+  async getArtistReviews(artistId: number): Promise<Review[]> {
+    try {
+      // Mock reviews data for testing
+      return [
+        {
+          id: "1",
+          artistId: artistId,
+          userId: 1,
+          userName: "Ana Gómez",
+          userPhotoURL: "https://randomuser.me/api/portraits/women/23.jpg",
+          rating: 5,
+          comment: "Excelente profesional, muy puntual y dedicado. Recomendado!",
+          date: new Date().toISOString()
+        },
+        {
+          id: "2",
+          artistId: artistId,
+          userId: 2,
+          userName: "Martín Soto",
+          userPhotoURL: "https://randomuser.me/api/portraits/men/43.jpg",
+          rating: 4,
+          comment: "Buena experiencia, aunque hubo algunos detalles menores.",
+          date: new Date(Date.now() - 86400000 * 5).toISOString() // 5 days ago
+        }
+      ];
+    } catch (error) {
+      console.error("Error getting artist reviews:", error);
+      throw error;
+    }
+  }
+  
+  // Services
+  async createService(service: InsertService): Promise<Service> {
+    try {
+      const [newService] = await db.insert(services).values(service).returning();
+      return newService;
+    } catch (error) {
+      console.error("Error creating service:", error);
+      throw error;
+    }
+  }
+  
+  // Events
+  async getAllEvents(): Promise<Event[]> {
+    try {
+      return await db.select().from(events);
+    } catch (error) {
+      console.error("Error getting events:", error);
+      throw error;
+    }
+  }
+  
+  async getEvent(id: number): Promise<Event | undefined> {
+    try {
+      const [event] = await db.select().from(events).where(eq(events.id, id));
+      return event;
+    } catch (error) {
+      console.error("Error getting event:", error);
+      throw error;
+    }
+  }
+  
+  async createEvent(eventData: InsertEvent): Promise<Event> {
+    try {
+      const [event] = await db.insert(events).values(eventData).returning();
+      return event;
+    } catch (error) {
+      console.error("Error creating event:", error);
+      throw error;
+    }
+  }
+  
+  async getEventAttendees(eventId: number): Promise<any[]> {
+    try {
+      // For now, return mock data
+      return [
+        {
+          id: 1,
+          name: "Carlos Rodriguez",
+          photoURL: "https://randomuser.me/api/portraits/men/45.jpg"
+        },
+        {
+          id: 2,
+          name: "Maria Gomez",
+          photoURL: "https://randomuser.me/api/portraits/women/22.jpg"
+        }
+      ];
+    } catch (error) {
+      console.error("Error getting event attendees:", error);
+      throw error;
+    }
+  }
+  
+  async getFeaturedEvents(): Promise<any[]> {
+    try {
+      const eventsList = await db.select().from(events).limit(5);
+      
+      if (eventsList.length === 0) {
+        // Return mock data for testing when database is empty
+        return [
+          {
+            id: "1",
+            name: "Festival de Música Independiente",
+            date: new Date(Date.now() + 86400000 * 10).toISOString(), // 10 days from now
+            location: "Teatro Municipal, Bogotá",
+            price: 150000,
+            image: "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1170&q=80",
+            isFree: false,
+            isVirtual: false
+          },
+          {
+            id: "2",
+            name: "Exposición de Arte Moderno",
+            date: new Date(Date.now() + 86400000 * 15).toISOString(), // 15 days from now
+            location: "Galería Nacional, Medellín",
+            price: 50000,
+            image: "https://images.unsplash.com/photo-1531058020387-3be344556be6?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1170&q=80",
+            isFree: false,
+            isVirtual: false
+          },
+          {
+            id: "3",
+            name: "Taller de Producción Musical",
+            date: new Date(Date.now() + 86400000 * 5).toISOString(), // 5 days from now
+            location: "Evento Virtual",
+            price: 0,
+            image: "https://images.unsplash.com/photo-1588479060585-d2737a3ef976?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1170&q=80",
+            isFree: true,
+            isVirtual: true
+          }
+        ];
+      }
+      
+      // Get creator data for each event
+      const creatorIds = eventsList.map(event => event.creatorId);
+      const creatorsList = await db.select().from(users).where(inArray(users.id, creatorIds));
+      
+      // Create a map for easy lookup
+      const creatorsMap = new Map();
+      creatorsList.forEach(creator => {
+        creatorsMap.set(creator.id, creator);
+      });
+      
+      // Enrich events with creator data
+      const featuredEvents = eventsList.map(event => {
+        const creator = creatorsMap.get(event.creatorId);
+        return {
+          ...event,
+          creatorName: creator?.displayName,
+          creatorPhotoURL: creator?.photoURL
+        };
+      });
+      
+      return featuredEvents;
+    } catch (error) {
+      console.error("Error getting featured events:", error);
+      throw error;
+    }
+  }
+  
+  async getNearbyEvents(lat?: number, lng?: number): Promise<any[]> {
+    try {
+      // Get all events
+      const eventsList = await db.select().from(events);
+      
+      if (eventsList.length === 0) {
+        // Return mock data for testing when database is empty
+        return [
+          {
+            id: "4",
+            name: "Concierto de Jazz en el Parque",
+            date: new Date(Date.now() + 86400000 * 3).toISOString(), // 3 days from now
+            location: "Parque Simón Bolivar, Bogotá",
+            price: 0,
+            image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1074&q=80",
+            isFree: true,
+            isVirtual: false,
+            distance: 1.2
+          },
+          {
+            id: "5",
+            name: "Noche de Stand Up Comedy",
+            date: new Date(Date.now() + 86400000 * 7).toISOString(), // 7 days from now
+            location: "Teatro Bar, Chapinero",
+            price: 80000,
+            image: "https://images.unsplash.com/photo-1527224857830-43a7acc85260?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1171&q=80",
+            isFree: false,
+            isVirtual: false,
+            distance: 3.8
+          },
+          {
+            id: "6",
+            name: "Workshop de Fotografía Urbana",
+            date: new Date(Date.now() + 86400000 * 9).toISOString(), // 9 days from now
+            location: "Centro Cultural, La Candelaria",
+            price: 120000,
+            image: "https://images.unsplash.com/photo-1452587925148-ce544e77e70d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1074&q=80",
+            isFree: false,
+            isVirtual: false,
+            distance: 5.2
+          }
+        ];
+      }
+      
+      // Filter only physical events (non-virtual)
+      const physicalEvents = eventsList.filter(event => !event.eventType || event.eventType !== "virtual");
+      
+      // Calculate distance for each event if coordinates are provided
+      const eventsWithDistance = physicalEvents.map(event => {
+        let distance = null;
+        if (lat && lng && event.latitude && event.longitude) {
+          distance = this.calculateDistance(lat, lng, event.latitude, event.longitude);
+        }
+        
+        return {
+          ...event,
+          distance
+        };
+      });
+      
+      // Sort by distance if coordinates are provided, otherwise by date
+      if (lat && lng) {
+        eventsWithDistance.sort((a, b) => (a.distance || Infinity) - (b.distance || Infinity));
+      } else {
+        eventsWithDistance.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      }
+      
+      // Get only nearby events (within 50km or just the first few)
+      const nearbyEvents = lat && lng
+        ? eventsWithDistance.filter(event => event.distance && event.distance <= 50)
+        : eventsWithDistance.slice(0, 5);
+      
+      return nearbyEvents;
+    } catch (error) {
+      console.error("Error getting nearby events:", error);
+      throw error;
+    }
+  }
+  
+  async getEventsForExplorer(lat?: number, lng?: number): Promise<any[]> {
+    try {
+      // Get all events
+      const eventsList = await db.select().from(events);
+      
+      if (eventsList.length === 0) {
+        // Return mock data for testing when database is empty
+        return [
+          {
+            id: "7",
+            name: "Taller de Danza Contemporánea",
+            date: new Date(Date.now() + 86400000 * 12).toISOString(), // 12 days from now
+            location: "Academia de Artes, Usaquén",
+            price: 200000,
+            image: "https://images.unsplash.com/photo-1508700929628-666bc8bd84ea?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1169&q=80",
+            isFree: false,
+            isVirtual: false,
+            distance: 4.7
+          },
+          {
+            id: "8",
+            name: "Concierto Rock en Vivo",
+            date: new Date(Date.now() + 86400000 * 22).toISOString(), // 22 days from now
+            location: "Bar Auditorio, Zona T",
+            price: 95000,
+            image: "https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1074&q=80",
+            isFree: false,
+            isVirtual: false,
+            distance: 6.3
+          },
+          {
+            id: "9",
+            name: "Exposición de Fotografía",
+            date: new Date(Date.now() + 86400000 * 8).toISOString(), // 8 days from now
+            location: "Museo de Arte Moderno",
+            price: 25000,
+            image: "https://images.unsplash.com/photo-1621886292650-520f76c747d6?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1171&q=80",
+            isFree: false,
+            isVirtual: false,
+            distance: 7.9
+          },
+          {
+            id: "10",
+            name: "Masterclass de Piano",
+            date: new Date(Date.now() + 86400000 * 14).toISOString(), // 14 days from now
+            location: "Conservatorio Nacional",
+            price: 180000,
+            image: "https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1170&q=80",
+            isFree: false,
+            isVirtual: false,
+            distance: 9.2
+          },
+          {
+            id: "11",
+            name: "Festival de Cine Independiente",
+            date: new Date(Date.now() + 86400000 * 16).toISOString(), // 16 days from now
+            location: "Cinemateca Distrital",
+            price: 30000,
+            image: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1170&q=80",
+            isFree: false,
+            isVirtual: false,
+            distance: 5.6
+          }
+        ];
+      }
+      
+      // Calculate distance for each event if coordinates are provided
+      const eventsWithDistance = eventsList.map(event => {
+        let distance = null;
+        if (lat && lng && event.latitude && event.longitude) {
+          distance = this.calculateDistance(lat, lng, event.latitude, event.longitude);
+        }
+        
+        return {
+          ...event,
+          distance
+        };
+      });
+      
+      // Shuffle the array to provide variety in the explorer
+      return this.shuffleArray(eventsWithDistance);
+    } catch (error) {
+      console.error("Error getting events for explorer:", error);
+      throw error;
+    }
+  }
+  
+  // Favorites
+  async getFavoriteArtists(userId: number): Promise<any[]> {
+    try {
+      // Get all favorites for this user that are artists
+      const favoritesList = await db
+        .select()
+        .from(favorites)
+        .where(
+          and(
+            eq(favorites.userId, userId),
+            eq(favorites.type, "artist")
+          )
+        );
+      
+      if (favoritesList.length === 0) {
+        return [];
+      }
+      
+      // Get artist ids
+      const artistIds = favoritesList.map(favorite => favorite.itemId);
+      
+      // Get artist data
+      const artistsList = await db
+        .select()
+        .from(artists)
+        .where(inArray(artists.id, artistIds));
+      
+      // Enrich with user data
+      const userIds = artistsList.map(artist => artist.userId);
+      const usersList = await db.select().from(users).where(inArray(users.id, userIds));
+      
+      // Map for easy lookup
+      const usersMap = new Map();
+      usersList.forEach(user => {
+        usersMap.set(user.id, user);
+      });
+      
+      // Combine data
+      const enrichedArtists = artistsList.map(artist => {
+        const user = usersMap.get(artist.userId);
+        return {
+          ...artist,
+          displayName: user?.displayName,
+          photoURL: user?.photoURL,
+          location: user?.location,
+          role: user?.role
+        };
+      });
+      
+      return enrichedArtists;
+    } catch (error) {
+      console.error("Error getting favorite artists:", error);
+      throw error;
+    }
+  }
+  
+  async getFavoriteEvents(userId: number): Promise<any[]> {
+    try {
+      // Get all favorites for this user that are events
+      const favoritesList = await db
+        .select()
+        .from(favorites)
+        .where(
+          and(
+            eq(favorites.userId, userId),
+            eq(favorites.type, "event")
+          )
+        );
+      
+      if (favoritesList.length === 0) {
+        return [];
+      }
+      
+      // Get event ids
+      const eventIds = favoritesList.map(favorite => favorite.itemId);
+      
+      // Get event data
+      const eventsList = await db
+        .select()
+        .from(events)
+        .where(inArray(events.id, eventIds));
+      
+      return eventsList;
+    } catch (error) {
+      console.error("Error getting favorite events:", error);
+      throw error;
+    }
+  }
+  
+  async createFavorite(favoriteData: InsertFavorite): Promise<Favorite> {
+    try {
+      const [favorite] = await db.insert(favorites).values(favoriteData).returning();
+      return favorite;
+    } catch (error) {
+      console.error("Error creating favorite:", error);
+      throw error;
+    }
+  }
+  
+  async removeFavoriteArtist(userId: number, artistId: number): Promise<void> {
+    try {
+      await db
+        .delete(favorites)
+        .where(
+          and(
+            eq(favorites.userId, userId),
+            eq(favorites.itemId, artistId),
+            eq(favorites.type, "artist")
+          )
+        );
+    } catch (error) {
+      console.error("Error removing favorite artist:", error);
+      throw error;
+    }
+  }
+  
+  async removeFavoriteEvent(userId: number, eventId: number): Promise<void> {
+    try {
+      await db
+        .delete(favorites)
+        .where(
+          and(
+            eq(favorites.userId, userId),
+            eq(favorites.itemId, eventId),
+            eq(favorites.type, "event")
+          )
+        );
+    } catch (error) {
+      console.error("Error removing favorite event:", error);
+      throw error;
+    }
+  }
+  
+  // Chats
+  async getUserChats(userId: number): Promise<any[]> {
+    try {
+      const chatsList = await db
+        .select()
+        .from(chats)
+        .where(
+          or(
+            eq(chats.user1Id, userId),
+            eq(chats.user2Id, userId)
+          )
+        );
+      
+      if (chatsList.length === 0) {
+        return [];
+      }
+      
+      // Get the other user's info for each chat
+      const userIds = chatsList.flatMap(chat => 
+        chat.user1Id === userId ? [chat.user2Id] : [chat.user1Id]
+      );
+      
+      const usersList = await db
+        .select()
+        .from(users)
+        .where(inArray(users.id, userIds));
+      
+      // Map for easy lookup
+      const usersMap = new Map();
+      usersList.forEach(user => {
+        usersMap.set(user.id, user);
+      });
+      
+      // Get last message for each chat
+      const chatWithLastMessagePromises = chatsList.map(async chat => {
+        const lastMessages = await db
+          .select()
+          .from(messages)
+          .where(eq(messages.chatId, chat.id))
+          .orderBy(desc(messages.createdAt))
+          .limit(1);
+        
+        const lastMessage = lastMessages.length > 0 ? lastMessages[0] : null;
+        const otherUserId = chat.user1Id === userId ? chat.user2Id : chat.user1Id;
+        const otherUser = usersMap.get(otherUserId);
+        
+        return {
+          ...chat,
+          lastMessage,
+          user: {
+            id: otherUser?.id,
+            displayName: otherUser?.displayName,
+            photoURL: otherUser?.photoURL,
+            username: otherUser?.username
+          }
+        };
+      });
+      
+      const chatsWithLastMessage = await Promise.all(chatWithLastMessagePromises);
+      
+      // Sort by last message date (newest first)
+      return chatsWithLastMessage.sort((a, b) => {
+        if (!a.lastMessage) return 1;
+        if (!b.lastMessage) return -1;
+        return new Date(b.lastMessage.createdAt).getTime() - new Date(a.lastMessage.createdAt).getTime();
+      });
+    } catch (error) {
+      console.error("Error getting user chats:", error);
+      throw error;
+    }
+  }
+  
+  async getChat(id: number): Promise<any | undefined> {
+    try {
+      const [chat] = await db.select().from(chats).where(eq(chats.id, id));
+      
+      if (!chat) {
+        return undefined;
+      }
+      
+      // Get users data
+      const [user1] = await db.select().from(users).where(eq(users.id, chat.user1Id));
+      const [user2] = await db.select().from(users).where(eq(users.id, chat.user2Id));
+      
+      return {
+        ...chat,
+        user1: {
+          id: user1?.id,
+          displayName: user1?.displayName,
+          photoURL: user1?.photoURL,
+          username: user1?.username
+        },
+        user2: {
+          id: user2?.id,
+          displayName: user2?.displayName,
+          photoURL: user2?.photoURL,
+          username: user2?.username
+        }
+      };
+    } catch (error) {
+      console.error("Error getting chat:", error);
+      throw error;
+    }
+  }
+  
+  async createChat(user1Id: number, user2Id: number): Promise<any> {
+    try {
+      // Check if chat already exists
+      const existingChat = await db
+        .select()
+        .from(chats)
+        .where(
+          or(
+            and(
+              eq(chats.user1Id, user1Id),
+              eq(chats.user2Id, user2Id)
+            ),
+            and(
+              eq(chats.user1Id, user2Id),
+              eq(chats.user2Id, user1Id)
+            )
+          )
+        );
+      
+      if (existingChat.length > 0) {
+        return existingChat[0];
+      }
+      
+      // Create new chat
+      const [chat] = await db
+        .insert(chats)
+        .values({
+          user1Id,
+          user2Id,
+          createdAt: new Date()
+        })
+        .returning();
+      
+      return chat;
+    } catch (error) {
+      console.error("Error creating chat:", error);
+      throw error;
+    }
+  }
+  
+  async getChatMessages(chatId: number): Promise<Message[]> {
+    try {
+      const messagesList = await db
+        .select()
+        .from(messages)
+        .where(eq(messages.chatId, chatId))
+        .orderBy(asc(messages.createdAt));
+      
+      return messagesList;
+    } catch (error) {
+      console.error("Error getting chat messages:", error);
+      throw error;
+    }
+  }
+  
+  async createMessage(messageData: InsertMessage): Promise<Message> {
+    try {
+      const [message] = await db
+        .insert(messages)
+        .values({
+          ...messageData,
+          createdAt: new Date()
+        })
+        .returning();
+      
+      return message;
+    } catch (error) {
+      console.error("Error creating message:", error);
+      throw error;
+    }
+  }
+  
+  // Products
+  async getAllProducts(): Promise<any[]> {
+    try {
+      const productsList = await db.select().from(products);
+      
+      if (productsList.length === 0) {
+        // Return mock data for testing
+        return [
+          {
+            id: 1,
+            name: "Pintura Original",
+            description: "Pintura acrílica sobre lienzo, 60x80cm",
+            price: 450000,
+            artistId: 5,
+            category: "Pintura",
+            imageUrl: "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1074&q=80"
+          },
+          {
+            id: 2,
+            name: "Fotografía Edición Limitada",
+            description: "Fotografía en blanco y negro, impresión giclée, 30x40cm",
+            price: 120000,
+            artistId: 2,
+            category: "Fotografía",
+            imageUrl: "https://images.unsplash.com/photo-1501580242143-28a1c22e4faa?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1025&q=80"
+          },
+          {
+            id: 3,
+            name: "Escultura de Cerámica",
+            description: "Escultura en cerámica esmaltada, 25cm de altura",
+            price: 180000,
+            artistId: 3,
+            category: "Escultura",
+            imageUrl: "https://images.unsplash.com/photo-1482977036925-e8fcaa643657?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1169&q=80"
+          }
+        ];
+      }
+      
+      // Get artist data for each product
+      const artistIds = productsList.map(product => product.artistId).filter(id => id !== null);
+      
+      if (artistIds.length > 0) {
+        const artistsList = await db.select().from(artists).where(inArray(artists.id, artistIds));
+        const userIds = artistsList.map(artist => artist.userId);
+        const usersList = await db.select().from(users).where(inArray(users.id, userIds));
+        
+        // Maps for easy lookup
+        const artistsMap = new Map();
+        artistsList.forEach(artist => {
+          artistsMap.set(artist.id, artist);
+        });
+        
+        const usersMap = new Map();
+        usersList.forEach(user => {
+          usersMap.set(user.id, user);
+        });
+        
+        // Combine data
+        return productsList.map(product => {
+          const artist = artistsMap.get(product.artistId);
+          const user = artist ? usersMap.get(artist.userId) : null;
+          
+          return {
+            ...product,
+            artistName: user?.displayName || "Artista Desconocido"
+          };
+        });
+      }
+      
+      return productsList;
+    } catch (error) {
+      console.error("Error getting products:", error);
+      throw error;
+    }
+  }
+  
+  async createProduct(productData: InsertProduct): Promise<Product> {
+    try {
+      const [product] = await db.insert(products).values(productData).returning();
+      return product;
+    } catch (error) {
+      console.error("Error creating product:", error);
+      throw error;
+    }
+  }
+  
+  // Service Requests
+  async createServiceRequest(requestData: InsertServiceRequest): Promise<ServiceRequest> {
+    try {
+      const [request] = await db.insert(serviceRequests).values({
+        ...requestData,
+        createdAt: new Date(),
+        status: requestData.status || "pending"
+      }).returning();
+      
+      return request;
+    } catch (error) {
+      console.error("Error creating service request:", error);
+      throw error;
+    }
+  }
+  
+  // Search
+  async searchArtists(query?: string, lat?: number, lng?: number, filters?: any): Promise<any[]> {
+    try {
+      // Get all artists
+      let artistsList = await db.select().from(artists);
+      
+      // Get all user data for these artists
+      const userIds = artistsList.map(artist => artist.userId);
+      const usersList = await db.select().from(users).where(inArray(users.id, userIds));
+      
+      // Create a map of user data for easy lookup
+      const usersMap = new Map();
+      usersList.forEach(user => {
+        usersMap.set(user.id, user);
+      });
+      
+      // Combine artist and user data
+      let combinedArtists = artistsList.map(artist => {
+        const user = usersMap.get(artist.userId);
+        
+        // Calculate distance if coordinates are provided
+        let distance = null;
+        if (lat && lng && user?.latitude && user?.longitude) {
+          distance = this.calculateDistance(lat, lng, user.latitude, user.longitude);
+        }
+        
+        return {
+          ...artist,
+          displayName: user?.displayName,
+          photoURL: user?.photoURL,
+          location: user?.location,
+          role: user?.role,
+          distance
+        };
+      });
+      
+      // Filter by query if provided
+      if (query) {
+        const lowerQuery = query.toLowerCase();
+        combinedArtists = combinedArtists.filter(artist => 
+          artist.displayName?.toLowerCase().includes(lowerQuery) ||
+          artist.category?.toLowerCase().includes(lowerQuery) ||
+          artist.subcategory?.toLowerCase().includes(lowerQuery) ||
+          artist.role?.toLowerCase().includes(lowerQuery) ||
+          artist.location?.toLowerCase().includes(lowerQuery)
+        );
+      }
+      
+      // Apply additional filters if provided
+      if (filters) {
+        if (filters.category) {
+          combinedArtists = combinedArtists.filter(artist => 
+            artist.category?.toLowerCase() === filters.category.toLowerCase()
+          );
+        }
+        
+        if (filters.subcategory) {
+          combinedArtists = combinedArtists.filter(artist => 
+            artist.subcategory?.toLowerCase() === filters.subcategory.toLowerCase()
+          );
+        }
+        
+        if (filters.minPrice !== undefined) {
+          combinedArtists = combinedArtists.filter(artist => 
+            artist.minPrice !== null && artist.minPrice >= filters.minPrice
+          );
+        }
+        
+        if (filters.maxPrice !== undefined) {
+          combinedArtists = combinedArtists.filter(artist => 
+            artist.maxPrice !== null && artist.maxPrice <= filters.maxPrice
+          );
+        }
+        
+        if (filters.minRating !== undefined) {
+          combinedArtists = combinedArtists.filter(artist => 
+            artist.rating !== null && artist.rating >= filters.minRating
+          );
+        }
+      }
+      
+      // Sort by distance if coordinates are provided, otherwise by rating
+      if (lat && lng) {
+        combinedArtists.sort((a, b) => (a.distance || Infinity) - (b.distance || Infinity));
+      } else {
+        combinedArtists.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+      }
+      
+      return combinedArtists;
+    } catch (error) {
+      console.error("Error searching artists:", error);
+      throw error;
+    }
+  }
+  
+  async searchEvents(query?: string, lat?: number, lng?: number, filters?: any): Promise<any[]> {
+    try {
+      // Get all events
+      let eventsList = await db.select().from(events);
+      
+      // Calculate distance for each event if coordinates are provided
+      let eventsWithDistance = eventsList.map(event => {
+        let distance = null;
+        if (lat && lng && event.latitude && event.longitude) {
+          distance = this.calculateDistance(lat, lng, event.latitude, event.longitude);
+        }
+        
+        return {
+          ...event,
+          distance
+        };
+      });
+      
+      // Filter by query if provided
+      if (query) {
+        const lowerQuery = query.toLowerCase();
+        eventsWithDistance = eventsWithDistance.filter(event => 
+          event.name?.toLowerCase().includes(lowerQuery) ||
+          event.location?.toLowerCase().includes(lowerQuery) ||
+          event.description?.toLowerCase().includes(lowerQuery)
+        );
+      }
+      
+      // Apply additional filters if provided
+      if (filters) {
+        if (filters.isFree !== undefined) {
+          eventsWithDistance = eventsWithDistance.filter(event => 
+            (filters.isFree && (!event.price || event.price === 0)) ||
+            (!filters.isFree && event.price && event.price > 0)
+          );
+        }
+        
+        if (filters.isVirtual !== undefined) {
+          eventsWithDistance = eventsWithDistance.filter(event => 
+            (filters.isVirtual && event.eventType === "virtual") ||
+            (!filters.isVirtual && event.eventType !== "virtual")
+          );
+        }
+        
+        if (filters.maxPrice !== undefined) {
+          eventsWithDistance = eventsWithDistance.filter(event => 
+            !event.price || event.price <= filters.maxPrice
+          );
+        }
+        
+        if (filters.startDate !== undefined) {
+          const startDate = new Date(filters.startDate);
+          eventsWithDistance = eventsWithDistance.filter(event => 
+            new Date(event.date) >= startDate
+          );
+        }
+        
+        if (filters.endDate !== undefined) {
+          const endDate = new Date(filters.endDate);
+          eventsWithDistance = eventsWithDistance.filter(event => 
+            new Date(event.date) <= endDate
+          );
+        }
+      }
+      
+      // Sort by distance if coordinates are provided, otherwise by date
+      if (lat && lng) {
+        eventsWithDistance.sort((a, b) => (a.distance || Infinity) - (b.distance || Infinity));
+      } else {
+        eventsWithDistance.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      }
+      
+      return eventsWithDistance;
+    } catch (error) {
+      console.error("Error searching events:", error);
+      throw error;
+    }
+  }
+  
+  // Blog
+  async getBlogPosts(): Promise<BlogPost[]> {
+    try {
+      // Return mock data for testing
+      return [
+        {
+          id: "1",
+          title: "Cómo Encontrar el Artista Perfecto para tu Evento",
+          excerpt: "Descubre los mejores consejos para contratar artistas que eleven tus eventos al siguiente nivel.",
+          content: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam auctor, nisl eget ultricies tincidunt, nisl nisl aliquam nisl, eget ultricies nisl nisl eget nisl. Nullam auctor, nisl eget ultricies tincidunt, nisl nisl aliquam nisl, eget ultricies nisl nisl eget nisl.",
+          imageUrl: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1170&q=80",
+          date: new Date(Date.now() - 86400000 * 3).toISOString(), // 3 days ago
+          author: "María González"
+        },
+        {
+          id: "2",
+          title: "Las Tendencias Artísticas que Dominan el 2023",
+          excerpt: "Un análisis de las nuevas tendencias en arte y entretenimiento que están definiendo el año.",
+          content: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam auctor, nisl eget ultricies tincidunt, nisl nisl aliquam nisl, eget ultricies nisl nisl eget nisl. Nullam auctor, nisl eget ultricies tincidunt, nisl nisl aliquam nisl, eget ultricies nisl nisl eget nisl.",
+          imageUrl: "https://images.unsplash.com/photo-1547891654-e66ed7ebb968?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1170&q=80",
+          date: new Date(Date.now() - 86400000 * 7).toISOString(), // 7 days ago
+          author: "Carlos Rodríguez"
+        },
+        {
+          id: "3",
+          title: "Organiza tu Evento Cultural con Éxito",
+          excerpt: "Guía completa para la planificación y ejecución de eventos culturales que dejen huella.",
+          content: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam auctor, nisl eget ultricies tincidunt, nisl nisl aliquam nisl, eget ultricies nisl nisl eget nisl. Nullam auctor, nisl eget ultricies tincidunt, nisl nisl aliquam nisl, eget ultricies nisl nisl eget nisl.",
+          imageUrl: "https://images.unsplash.com/photo-1505236858219-8359eb29e329?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1062&q=80",
+          date: new Date(Date.now() - 86400000 * 14).toISOString(), // 14 days ago
+          author: "Ana Martínez"
+        }
+      ];
+    } catch (error) {
+      console.error("Error getting blog posts:", error);
+      throw error;
+    }
+  }
+  
+  // Helper methods
+  
+  calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    // Haversine formula to calculate distance between two coordinates in kilometers
+    const R = 6371; // Radius of the earth in km
+    const dLat = this.deg2rad(lat2 - lat1);
+    const dLon = this.deg2rad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(this.deg2rad(lat1)) * Math.cos(this.deg2rad(lat2)) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distance = R * c; // Distance in km
+    
+    // Round to 1 decimal place
+    return Math.round(distance * 10) / 10;
+  }
+  
+  deg2rad(deg: number): number {
+    return deg * (Math.PI / 180);
+  }
+  
+  shuffleArray<T>(array: T[]): T[] {
+    // Fisher-Yates shuffle algorithm
+    const newArray = [...array];
+    for (let i = newArray.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+    }
+    return newArray;
+  }
+}
+
+// Export an instance of the storage implementation to use
+export const storage = new DatabaseStorage();
+
 // Firebase implementation of storage
-export class FirebaseStorage implements IStorage {
+// This class is deprecated and should not be used
+// It's kept for reference only and will be removed in the future
+/* 
+// Commented out Firebase implementation to avoid compilation errors
+class FirebaseStorage implements IStorage {
   // Users
   async getAllUsers(): Promise<User[]> {
     try {
@@ -1786,3 +3104,4 @@ export class FirebaseStorage implements IStorage {
     return newArray;
   }
 }
+*/

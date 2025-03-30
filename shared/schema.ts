@@ -82,8 +82,8 @@ export type Event = typeof events.$inferSelect;
 export const favorites = pgTable("favorites", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
-  artistId: integer("artist_id").references(() => artists.id),
-  eventId: integer("event_id").references(() => events.id),
+  itemId: integer("item_id").notNull(),
+  type: text("type").notNull(), // "artist" or "event"
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
