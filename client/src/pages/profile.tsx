@@ -19,7 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { format } from "date-fns";
-import { User, CreditCard, Bell, Calendar, Settings, Image, LogOut, Trash2, Edit, Plus, X } from "lucide-react";
+import { User, CreditCard, Bell, Calendar, Settings, Image, LogOut, Trash2, Edit, Plus, X, ShoppingBag, Send, Download, Package, CheckCircle } from "lucide-react";
 import { Link } from "wouter";
 import AuthDialog from "@/components/auth-dialog";
 
@@ -47,6 +47,25 @@ export default function ProfilePage() {
   // User's artist profile if exists
   const { data: artistProfile, isLoading: isLoadingArtist } = useQuery({
     queryKey: ['/api/users/artist-profile'],
+    enabled: !!user,
+    throwOnError: false,
+  });
+  
+  // Orders data
+  const { data: ordersMade, isLoading: isLoadingOrdersMade } = useQuery({
+    queryKey: ['/api/orders/made'],
+    enabled: !!user,
+    throwOnError: false,
+  });
+  
+  const { data: ordersReceived, isLoading: isLoadingOrdersReceived } = useQuery({
+    queryKey: ['/api/orders/received'],
+    enabled: !!user && !!artistProfile,
+    throwOnError: false,
+  });
+  
+  const { data: ordersAccepted, isLoading: isLoadingOrdersAccepted } = useQuery({
+    queryKey: ['/api/orders/accepted'],
     enabled: !!user,
     throwOnError: false,
   });
@@ -230,18 +249,22 @@ export default function ProfilePage() {
           </div>
 
           <Tabs defaultValue="profile">
-            <TabsList className="w-full">
-              <TabsTrigger value="profile" className="flex-1">
+            <TabsList className="w-full grid grid-cols-4">
+              <TabsTrigger value="profile">
                 <User className="h-4 w-4 mr-2" />
                 Perfil
               </TabsTrigger>
-              <TabsTrigger value="events" className="flex-1">
-                <Calendar className="h-4 w-4 mr-2" />
-                Mis Eventos
+              <TabsTrigger value="orders">
+                <ShoppingBag className="h-4 w-4 mr-2" />
+                Órdenes
               </TabsTrigger>
-              <TabsTrigger value="settings" className="flex-1">
+              <TabsTrigger value="events">
+                <Calendar className="h-4 w-4 mr-2" />
+                Eventos
+              </TabsTrigger>
+              <TabsTrigger value="settings">
                 <Settings className="h-4 w-4 mr-2" />
-                Configuración
+                Config
               </TabsTrigger>
             </TabsList>
             
@@ -378,6 +401,290 @@ export default function ProfilePage() {
                   </CardContent>
                 </Card>
               )}
+            </TabsContent>
+            
+            {/* Orders Tab */}
+            <TabsContent value="orders" className="mt-6">
+              <Tabs defaultValue="made">
+                <TabsList className="w-full grid grid-cols-3">
+                  <TabsTrigger value="made">
+                    <Send className="h-4 w-4 mr-2" />
+                    Realizadas
+                  </TabsTrigger>
+                  <TabsTrigger value="received">
+                    <Download className="h-4 w-4 mr-2" />
+                    Recibidas
+                  </TabsTrigger>
+                  <TabsTrigger value="accepted">
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Aceptadas
+                  </TabsTrigger>
+                </TabsList>
+                
+                {/* Orders Made Tab */}
+                <TabsContent value="made" className="mt-4">
+                  {isLoadingOrdersMade ? (
+                    <div className="space-y-4">
+                      {Array(2).fill(0).map((_, i) => (
+                        <Skeleton key={i} className="h-28 w-full rounded-lg" />
+                      ))}
+                    </div>
+                  ) : ordersMade && ordersMade.length > 0 ? (
+                    <div className="space-y-4">
+                      {ordersMade.map((order: any) => (
+                        <Card key={order.id}>
+                          <CardContent className="p-4">
+                            <div className="flex justify-between items-start">
+                              <div className="flex items-start space-x-4">
+                                <div className="bg-primary/10 p-3 rounded-md">
+                                  <Package className="h-6 w-6 text-primary" />
+                                </div>
+                                <div>
+                                  <h3 className="font-medium">{order.title}</h3>
+                                  <p className="text-sm text-muted-foreground mt-1">
+                                    Enviada: {format(new Date(order.createdAt), "d 'de' MMMM, yyyy")}
+                                  </p>
+                                  <div className="flex items-center mt-2">
+                                    <Badge className="mr-2">{order.categoryName}</Badge>
+                                    <Badge 
+                                      variant="outline" 
+                                      className={
+                                        order.status === 'active' 
+                                          ? "bg-amber-100 text-amber-800 hover:bg-amber-100" 
+                                          : order.status === 'completed' 
+                                            ? "bg-green-100 text-green-800 hover:bg-green-100"
+                                            : "bg-red-100 text-red-800 hover:bg-red-100"
+                                      }
+                                    >
+                                      {order.status === 'active' 
+                                        ? "Pendiente" 
+                                        : order.status === 'completed' 
+                                          ? "Completada" 
+                                          : "Cancelada"}
+                                    </Badge>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-medium text-primary">
+                                  {new Intl.NumberFormat('es-CO', {
+                                    style: 'currency',
+                                    currency: 'COP',
+                                    minimumFractionDigits: 0,
+                                    maximumFractionDigits: 0,
+                                  }).format(order.price)}
+                                </p>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="mt-2" 
+                                  asChild
+                                >
+                                  <Link href={`/orders/${order.id}`}>
+                                    Ver detalles
+                                  </Link>
+                                </Button>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <Card>
+                      <CardContent className="py-8 text-center">
+                        <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                        <h3 className="font-semibold text-xl mb-2">No tienes órdenes realizadas</h3>
+                        <p className="text-muted-foreground mb-6">
+                          Realiza tu primera solicitud de servicio a artistas de la plataforma
+                        </p>
+                        <Button asChild>
+                          <Link href="/offers/new">
+                            <Plus className="h-4 w-4 mr-2" />
+                            Crear solicitud
+                          </Link>
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  )}
+                </TabsContent>
+                
+                {/* Orders Received Tab */}
+                <TabsContent value="received" className="mt-4">
+                  {!artistProfile ? (
+                    <Card>
+                      <CardContent className="py-8 text-center">
+                        <Download className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                        <h3 className="font-semibold text-xl mb-2">Perfil de artista no encontrado</h3>
+                        <p className="text-muted-foreground mb-6">
+                          Debes crear un perfil de artista para recibir solicitudes de servicio
+                        </p>
+                        <Button asChild>
+                          <Link href="/create-artist-profile">
+                            <Plus className="h-4 w-4 mr-2" />
+                            Crear perfil de artista
+                          </Link>
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ) : isLoadingOrdersReceived ? (
+                    <div className="space-y-4">
+                      {Array(2).fill(0).map((_, i) => (
+                        <Skeleton key={i} className="h-32 w-full rounded-lg" />
+                      ))}
+                    </div>
+                  ) : ordersReceived && ordersReceived.length > 0 ? (
+                    <div className="space-y-4">
+                      {ordersReceived.map((order: any) => (
+                        <Card key={order.id}>
+                          <CardContent className="p-4">
+                            <div className="flex justify-between items-start">
+                              <div className="flex items-start space-x-4">
+                                <Avatar className="h-12 w-12">
+                                  <AvatarImage src={order.userPhoto} alt={order.userName} />
+                                  <AvatarFallback>{order.userName?.slice(0, 2).toUpperCase()}</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <h3 className="font-medium">{order.userName}</h3>
+                                  <p className="text-sm text-muted-foreground mt-1">Solicita: {order.title}</p>
+                                  <p className="text-sm text-muted-foreground">
+                                    Recibida: {format(new Date(order.createdAt), "d 'de' MMMM, yyyy")}
+                                  </p>
+                                  <div className="flex items-center mt-2">
+                                    <Badge variant="outline" className="bg-amber-100 text-amber-800 hover:bg-amber-100">
+                                      Esperando respuesta
+                                    </Badge>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-medium text-primary">
+                                  {new Intl.NumberFormat('es-CO', {
+                                    style: 'currency',
+                                    currency: 'COP',
+                                    minimumFractionDigits: 0,
+                                    maximumFractionDigits: 0,
+                                  }).format(order.price)}
+                                </p>
+                                <div className="flex space-x-2 mt-2">
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    className="text-destructive border-destructive hover:bg-destructive/10"
+                                    onClick={() => {
+                                      toast({
+                                        title: "Solicitud rechazada",
+                                        description: "Has rechazado la solicitud de servicio",
+                                      });
+                                    }}
+                                  >
+                                    Rechazar
+                                  </Button>
+                                  <Button 
+                                    size="sm"
+                                    onClick={() => {
+                                      toast({
+                                        title: "Solicitud aceptada",
+                                        description: "Has aceptado la solicitud de servicio",
+                                      });
+                                    }}
+                                  >
+                                    Aceptar
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <Card>
+                      <CardContent className="py-8 text-center">
+                        <Download className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                        <h3 className="font-semibold text-xl mb-2">No tienes solicitudes pendientes</h3>
+                        <p className="text-muted-foreground mb-6">
+                          Cuando los usuarios te soliciten servicios, aparecerán aquí
+                        </p>
+                      </CardContent>
+                    </Card>
+                  )}
+                </TabsContent>
+                
+                {/* Orders Accepted Tab */}
+                <TabsContent value="accepted" className="mt-4">
+                  {isLoadingOrdersAccepted ? (
+                    <div className="space-y-4">
+                      {Array(2).fill(0).map((_, i) => (
+                        <Skeleton key={i} className="h-32 w-full rounded-lg" />
+                      ))}
+                    </div>
+                  ) : ordersAccepted && ordersAccepted.length > 0 ? (
+                    <div className="space-y-4">
+                      {ordersAccepted.map((order: any) => (
+                        <Card key={order.id}>
+                          <CardContent className="p-4">
+                            <div className="flex justify-between items-start">
+                              <div className="flex items-start space-x-4">
+                                <Avatar className="h-12 w-12">
+                                  <AvatarImage src={order.userPhoto || order.artistPhoto} alt={order.userName || order.artistName} />
+                                  <AvatarFallback>
+                                    {(order.userName || order.artistName)?.slice(0, 2).toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <h3 className="font-medium">{order.userName || order.artistName}</h3>
+                                  <p className="text-sm text-muted-foreground mt-1">Servicio: {order.title || order.serviceName}</p>
+                                  {order.eventDate && (
+                                    <p className="text-sm mt-1">
+                                      Fecha del evento: {format(new Date(order.eventDate), "d 'de' MMMM, yyyy")}
+                                    </p>
+                                  )}
+                                  <div className="flex items-center mt-2">
+                                    <Badge variant="outline" className="bg-green-100 text-green-800 hover:bg-green-100">
+                                      Confirmado
+                                    </Badge>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-medium text-primary">
+                                  {new Intl.NumberFormat('es-CO', {
+                                    style: 'currency',
+                                    currency: 'COP',
+                                    minimumFractionDigits: 0,
+                                    maximumFractionDigits: 0,
+                                  }).format(order.price)}
+                                </p>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="mt-2"
+                                  asChild
+                                >
+                                  <Link href={`/orders/${order.id}/details`}>
+                                    Ver contrato
+                                  </Link>
+                                </Button>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <Card>
+                      <CardContent className="py-8 text-center">
+                        <CheckCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                        <h3 className="font-semibold text-xl mb-2">No tienes órdenes aceptadas</h3>
+                        <p className="text-muted-foreground mb-6">
+                          Una vez aceptes o recibas órdenes confirmadas, aparecerán aquí
+                        </p>
+                      </CardContent>
+                    </Card>
+                  )}
+                </TabsContent>
+              </Tabs>
             </TabsContent>
             
             {/* Events Tab */}

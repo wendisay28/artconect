@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { ChevronRight, ChevronLeft, Search, Bell, BookmarkCheck, Share2, MapPin } from "lucide-react";
+import { ChevronRight, ChevronLeft, Search, Bell, BookmarkCheck, Share2, MapPin, MessageSquare } from "lucide-react";
 
 // Definición de tipos para los datos de API
 interface Event {
@@ -119,6 +119,11 @@ export default function HomePage() {
           <Link href="/search">
             <Button variant="ghost" size="icon" className="rounded-full">
               <Search className="h-5 w-5" />
+            </Button>
+          </Link>
+          <Link href="/chat">
+            <Button variant="ghost" size="icon" className="rounded-full">
+              <MessageSquare className="h-5 w-5" />
             </Button>
           </Link>
           <Button variant="ghost" size="icon" className="rounded-full">

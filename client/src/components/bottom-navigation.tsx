@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation as useWouterLocation, Link } from "wouter";
-import { Home, Compass, Plus, MessageCircle, User } from "lucide-react";
+import { Home, Compass, MessageSquare, Bookmark, User, Clock } from "lucide-react";
 
 export default function BottomNavigation() {
   const [location] = useWouterLocation();
@@ -38,21 +38,21 @@ export default function BottomNavigation() {
           </div>
         </Link>
         
-        <Link href="/create">
+        <Link href="/real-time-offers">
           <div className="flex flex-col items-center py-2 px-4 text-muted-foreground">
             <div className="bg-primary text-white rounded-full w-12 h-12 flex items-center justify-center -mt-5">
-              <Plus size={20} />
+              <Clock size={20} />
             </div>
-            <span className="text-xs mt-1">Crear</span>
+            <span className="text-xs mt-1">En vivo</span>
           </div>
         </Link>
         
-        <Link href="/chat">
+        <Link href="/favorites">
           <div className={`flex flex-col items-center py-2 px-4 ${
-            isActive("chat") ? "text-primary" : "text-muted-foreground"
+            isActive("favorites") ? "text-primary" : "text-muted-foreground"
           }`}>
-            <MessageCircle size={20} />
-            <span className="text-xs mt-1">Chat</span>
+            <Bookmark size={20} />
+            <span className="text-xs mt-1">Favoritos</span>
           </div>
         </Link>
         
