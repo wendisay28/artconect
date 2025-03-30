@@ -16,10 +16,14 @@ console.log("Firebase Auth Domain Info:", {
   projectId: firebaseProjectId
 });
 
-// Configuración de Firebase
+// Configuración de Firebase con dominio dinámico
+// Usamos el dominio actual para autenticación (para desarrollo en Replit)
+const currentDomain = window.location.hostname;
+
 const firebaseConfig = {
   apiKey: firebaseApiKey || "",
-  authDomain: `${firebaseProjectId || ""}.firebaseapp.com`,
+  // Usamos el dominio actual de Replit para desarrollo y el dominio de Firebase para producción
+  authDomain: currentDomain.includes('replit') ? currentDomain : `${firebaseProjectId || ""}.firebaseapp.com`,
   projectId: firebaseProjectId || "",
   storageBucket: `${firebaseProjectId || ""}.appspot.com`,
   appId: firebaseAppId || "",

@@ -33,20 +33,71 @@ const clients = new Map<string, WebSocket>();
 const userSockets = new Map<number, string[]>();
 
 export function setupWebSocketServer(httpServer: Server) {
-  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+  // Configuración con manejo de errores mejorado
+  const wss = new WebSocketServer({ 
+    server: httpServer, 
+    path: '/ws',
+    // Aumentar el tiempo de ping-pong para mantener vivas las conexiones
+    clientTracking: true,
+    perMessageDeflate: {
+      zlibDeflateOptions: {
+        chunkSize: 1024,
+        memLevel: 7,
+        level: 3
+      },
+      zlibInflateOptions: {
+        chunkSize: 10 * 1024
+      },
+      // Otros parámetros de compresión predeterminados
+      concurrencyLimit: 10, 
+      threshold: 1024 // Solo comprimir mensajes mayores a 1KB
+    }
+  });
   
   console.log('WebSocket server initialized on path: /ws');
   
-  wss.on('connection', (ws: WebSocket) => {
+  // Manejar errores a nivel del servidor WebSocket
+  wss.on('error', (error) => {
+    console.error('WebSocket server error:', error);
+  });
+  
+  // Manejar el evento de "headers" para configurar CORS si es necesario
+  wss.on('headers', (headers, req) => {
+    // Agregar encabezados CORS si es necesario
+    const origin = req.headers.origin;
+    if (origin) {
+      headers.push('Access-Control-Allow-Origin: *');
+      headers.push('Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept');
+    }
+  });
+  
+  // Manejar nuevas conexiones
+  wss.on('connection', (ws: WebSocket, req) => {
+    // Generar un ID único para este cliente
     const clientId = Math.random().toString(36).substring(2, 15);
     clients.set(clientId, ws);
     
-    console.log(`WebSocket client connected: ${clientId}`);
+    const ip = req.socket.remoteAddress || 'unknown';
+    console.log(`WebSocket client connected: ${clientId} from ${ip}`);
     
+    // Configurar un ping para mantener la conexión activa
+    const pingInterval = setInterval(() => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.ping();
+      } else {
+        clearInterval(pingInterval);
+      }
+    }, 30000); // Ping cada 30 segundos
+    
+    // Manejar mensajes entrantes
     ws.on('message', async (message: string) => {
       try {
-        const data = JSON.parse(message) as WebSocketMessage;
+        console.log(`Received message from client ${clientId}: ${message.toString().substring(0, 100)}...`);
         
+        // Intentar parsear el mensaje como JSON
+        const data = JSON.parse(message.toString()) as WebSocketMessage;
+        
+        // Procesar según el tipo de mensaje
         switch (data.type) {
           case 'chat_message':
             await handleChatMessage(data, clientId);
@@ -55,6 +106,7 @@ export function setupWebSocketServer(httpServer: Server) {
             handleUserStatus(data, clientId);
             break;
           default:
+            console.warn(`Unknown message type: ${data.type}`);
             ws.send(JSON.stringify({
               type: 'error',
               payload: { message: 'Unknown message type' }
@@ -62,18 +114,28 @@ export function setupWebSocketServer(httpServer: Server) {
         }
       } catch (error) {
         console.error('Error processing message:', error);
-        ws.send(JSON.stringify({
-          type: 'error',
-          payload: { message: 'Failed to process message' }
-        }));
+        
+        // Solo enviar respuesta de error si la conexión sigue abierta
+        if (ws.readyState === WebSocket.OPEN) {
+          try {
+            ws.send(JSON.stringify({
+              type: 'error',
+              payload: { message: 'Failed to process message' }
+            }));
+          } catch (sendError) {
+            console.error('Error sending error message:', sendError);
+          }
+        }
       }
     });
     
-    ws.on('close', () => {
-      // Clean up when client disconnects
+    // Manejar cierre de conexión
+    ws.on('close', (code, reason) => {
+      // Limpiar recursos asociados a esta conexión
+      clearInterval(pingInterval);
       clients.delete(clientId);
       
-      // Find and remove client from userSockets
+      // Encontrar y eliminar el cliente de userSockets
       for (const [userId, socketIds] of userSockets.entries()) {
         const index = socketIds.indexOf(clientId);
         if (index !== -1) {
@@ -85,14 +147,25 @@ export function setupWebSocketServer(httpServer: Server) {
         }
       }
       
-      console.log(`WebSocket client disconnected: ${clientId}`);
+      console.log(`WebSocket client disconnected: ${clientId}. Code: ${code}, Reason: ${reason || 'No reason provided'}`);
     });
     
-    // Send initial connection confirmation
-    ws.send(JSON.stringify({
-      type: 'connection_established',
-      payload: { clientId }
-    }));
+    // Manejar errores específicos de esta conexión
+    ws.on('error', (error) => {
+      console.error(`WebSocket error for client ${clientId}:`, error);
+    });
+    
+    // Confirmar conexión establecida
+    try {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'connection_established',
+          payload: { clientId }
+        }));
+      }
+    } catch (error) {
+      console.error('Error sending connection confirmation:', error);
+    }
   });
   
   async function handleChatMessage(data: ChatMessage, senderId: string) {

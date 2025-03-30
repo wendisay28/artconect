@@ -39,9 +39,19 @@ export function useWebSocket() {
   const [messages, setMessages] = useState<WebSocketMessage[]>([]);
   const socket = useRef<WebSocket | null>(null);
 
-  // Initialize WebSocket connection
+  // Initialize WebSocket connection with better error handling
   const connect = useCallback(() => {
-    if (socket.current?.readyState === WebSocket.OPEN) return;
+    // No conectar si ya está abierta la conexión
+    if (socket.current) {
+      // Verificar si el socket ya está conectado o en proceso de conexión
+      if (socket.current.readyState === WebSocket.OPEN) {
+        console.log('WebSocket already connected');
+        return;
+      } else if (socket.current.readyState === WebSocket.CONNECTING) {
+        console.log('WebSocket already connecting');
+        return;
+      }
+    }
 
     setStatus('connecting');
     
@@ -53,45 +63,64 @@ export function useWebSocket() {
     console.log("Connecting to WebSocket URL:", wsUrl);
     
     try {
+      // Cerrar cualquier conexión existente antes de crear una nueva
+      if (socket.current) {
+        try {
+          socket.current.close();
+        } catch (e) {
+          console.log('Error cerrando el socket previo:', e);
+        }
+      }
+
       const ws = new WebSocket(wsUrl);
       
       ws.onopen = () => {
         setStatus('open');
-        console.log('WebSocket connection established');
+        console.log('WebSocket connection established successfully');
       };
       
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data) as WebSocketMessage;
+          console.log('WebSocket message received:', data.type);
           setMessages(prev => [...prev, data]);
         } catch (error) {
           console.error('Failed to parse WebSocket message:', error);
         }
       };
       
-      ws.onclose = () => {
+      ws.onclose = (event) => {
         setStatus('closed');
-        console.log('WebSocket connection closed');
+        console.log(`WebSocket connection closed. Code: ${event.code}, Reason: ${event.reason || 'No reason provided'}`);
         
-        // Attempt to reconnect after 2 seconds
-        setTimeout(() => {
-          if (status !== 'closed') {
+        // Solo intentamos reconectar si no fue un cierre intencional (código 1000)
+        if (event.code !== 1000) {
+          // Attempt to reconnect after 3 seconds
+          console.log('Attempting to reconnect in 3 seconds...');
+          setTimeout(() => {
             connect();
-          }
-        }, 2000);
+          }, 3000);
+        }
       };
       
       ws.onerror = (error) => {
         setStatus('error');
-        console.error('WebSocket error:', error);
+        console.error('WebSocket error occurred:', error);
+        
+        // No hacemos nada aquí, ya que onclose se llamará automáticamente después de un error
       };
       
       socket.current = ws;
     } catch (error) {
       console.error('Failed to create WebSocket connection:', error);
       setStatus('error');
+      
+      // Intentar reconectar después de un error de creación
+      setTimeout(() => {
+        connect();
+      }, 5000);
     }
-  }, [status]);
+  }, []);
 
   // Disconnect WebSocket
   const disconnect = useCallback(() => {
