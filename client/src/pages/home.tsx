@@ -194,20 +194,22 @@ export default function HomePage() {
           </Link>
         </div>
         
-        <div className="space-y-4">
-          {isLoadingNearbyEvents ? (
-            Array(2).fill(0).map((_, i) => (
-              <Skeleton key={i} className="h-32 w-full rounded-lg" />
-            ))
-          ) : safeNearbyEvents.length === 0 ? (
-            <Card>
-              <CardContent className="py-4 text-center">
-                <p className="text-muted-foreground">No hay eventos cercanos disponibles</p>
-                <p className="text-sm text-muted-foreground mt-1">Intenta cambiar tu ubicación o buscar en un área más amplia</p>
-              </CardContent>
-            </Card>
-          ) : (
-            safeNearbyEvents.map(event => (
+        {isLoadingNearbyEvents ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Array(3).fill(0).map((_, i) => (
+              <Skeleton key={i} className="h-48 w-full rounded-lg" />
+            ))}
+          </div>
+        ) : safeNearbyEvents.length === 0 ? (
+          <Card>
+            <CardContent className="py-4 text-center">
+              <p className="text-muted-foreground">No hay eventos cercanos disponibles</p>
+              <p className="text-sm text-muted-foreground mt-1">Intenta cambiar tu ubicación o buscar en un área más amplia</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {safeNearbyEvents.map(event => (
               <EventCard
                 key={event.id}
                 id={String(event.id)}
@@ -221,9 +223,9 @@ export default function HomePage() {
                 onSave={handleSaveEvent}
                 onShare={handleShareEvent}
               />
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        )}
       </section>
       
       {/* Blog Section */}

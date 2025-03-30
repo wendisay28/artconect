@@ -1,0 +1,61 @@
+Tienes razón. Aquí está el prompt actualizado con las categorías incluidas para que la IA las tenga en cuenta y pueda mejorar el diseño.  
+
+---
+
+### **Prompt para IA**  
+
+#### **Corrección de errores y mejoras generales:**  
+1. **Revisar la consola:** Hay un error `DOMException {}` y otro relacionado con `DialogContent` (falta `Description` o `aria-describedby`). Solucionar cualquier otro problema encontrado.  
+2. **Sesión de edición de perfil:**  
+   - Asegurar que los usuarios puedan subir fotos y completar toda la información necesaria.  
+   - Corregir el error al hacer clic en "Guardar información".  
+3. **Registro e inicio de sesión con Google:**  
+   - Verificar si hay errores y asegurarse de que los usuarios puedan registrarse correctamente.  
+
+#### **UX/UI en la Home:**  
+4. **Eventos cercanos:** En la versión web, los eventos deben estar en la misma línea, mostrando al menos **tres eventos simultáneamente**.  
+5. **Blog y noticias:** Implementar un carrusel con flechas de navegación **(no como el banner superior)** para explorar los artículos uno a uno.  
+6. **Tienda:** Cambiar el nombre de “Tienda de Artista” a **“Tienda de Productos”**, ya que venderá libros, pinturas, artesanías y otros artículos artísticos.  
+
+#### **Buscador avanzado:**  
+7. **Ubicación:** Cambiar el placeholder a **“Elige la ciudad”** con las siguientes opciones predefinidas:  
+   - Medellín, Cali, Bogotá, Bucaramanga, Cartagena, Barranquilla, Villavicencio, Boyacá, Pasto, Arauca.  
+8. **Categorías:**  
+   - Hay demasiadas categorías, lo que hace que el diseño sea **demasiado largo**.  
+   - Buscar una mejor forma de visualizarlas sin ocupar tanto espacio (por ejemplo, con una vista de acordeón, pestañas o scroll horizontal).  
+   - **Categorías a incluir:**  
+     - **Eventos y Espectáculos:** Conciertos, teatro, cine al aire libre, ferias culturales, circo, stand-up comedy, etc.  
+     - **Artistas Audiovisuales:** Fotografía, videoclips, edición, animación, dirección de cine.  
+     - **Artes Plásticas:** Pintura, escultura, ilustración, artesanía, street art, cerámica, grabado.  
+     - **Artes Circenses:** Malabaristas, payasos, ilusionistas, trapecistas, espectáculos de fuego.  
+     - **Artes Escénicas:** Actores, danza, teatro musical, improvisación.  
+     - **Artes Musicales:** Bandas, cantantes, DJs, orquestas, compositores.  
+     - **Artes Literarias:** Escritores, guionistas, poetas, correctores de texto.  
+     - **Artes Digitales:** Diseño UI/UX, animación 3D, videojuegos, NFTs.  
+     - **Creativos y Diseñadores:** Diseño de moda, gastronomía creativa, packaging, branding.  
+     - **Conferencistas e Instructores:** Talleristas, coaches, docentes de arte.  
+     - **Creadores de Contenido Digital:** Marketing digital, blogs, influencers, educación online.  
+   - **Importante:** La IA debe encontrar una forma óptima de mostrar estas categorías sin que la lista sea demasiado extensa.  
+
+#### **Mejoras en funcionalidades:**  
+9. **Favoritos:**  
+   - Mover la sección de "Favoritos" al **icono del chat** en la barra inferior.  
+   - Subir el **chat** al lado del botón de notificaciones.  
+10. **Botón central (crear evento):**  
+    - En lugar de "Crear Evento", abrir la sección de **"Oferta en tiempo real"**.  
+    - Permitir que los usuarios publiquen una solicitud y que todos los artistas cercanos **reciban una notificación inmediata**.  
+    - Crear una página donde los solicitantes puedan ver y gestionar respuestas **(similar a InDriver)**, permitiendo aceptar o rechazar propuestas.  
+11. **Órdenes en el perfil:**  
+    - En el perfil, agregar una sección de **Órdenes** para ver:  
+      - **Órdenes hechas.**  
+      - **Órdenes recibidas.**  
+      - **Órdenes aceptadas.**  
+
+#### **Consejo sobre la oferta en tiempo real:**  
+Parece **redundante** crear eventos desde el botón central si ya se pueden agregar en el perfil. La idea de usar el botón para las ofertas **sí tiene sentido**, ya que es una funcionalidad diferente y más urgente. **Mi recomendación:**  
+- **Usar el botón central para la oferta en tiempo real.**  
+- **Dejar la creación de eventos en el perfil.**  
+
+---
+
+Con esto, la IA tendrá **claridad sobre las categorías** y el rediseño necesario. ¿Te parece bien así? 😊

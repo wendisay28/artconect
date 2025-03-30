@@ -1,0 +1,230 @@
+con base a estas categorias mejora un codigo que te voy a dar: Eventos y Espectáculos
+Conciertos y Festivales Musicales
+
+Obras de Teatro y Musicales
+
+Cine al Aire Libre y Proyecciones Especiales
+
+Ferias y Mercados Culturales
+
+Espectáculos de Circo y Artes Escénicas
+
+Eventos Familiares y Shows Infantiles
+
+Stand-up Comedy y Monólogos
+
+Exhibiciones de Arte y Performances
+
+Eventos Temáticos y Experiencias Inmersivas
+
+Eventos de Moda y Pasarelas
+
+🎥 Artistas Audiovisuales
+Fotógrafos de Bodas y Eventos
+
+Fotografía de Moda y Editorial
+
+Fotografía de Producto y Publicidad
+
+Fotografía de Naturaleza y Paisaje
+
+Videógrafos de Bodas y Eventos
+
+Videoclips Musicales y Comerciales
+
+Producción de Documentales y Cortometrajes
+
+Edición y Postproducción Audiovisual
+
+Dirección de Fotografía y Cinematografía
+
+Animación y Motion Graphics
+
+🎨 Artistas Plásticos
+Pintura al Óleo y Acrílico
+
+Escultura en Madera, Piedra y Metal
+
+Ilustración Tradicional y Digital
+
+Artesanía Textil y Bordado
+
+Joyería Artesanal y Diseño de Accesorios
+
+Murales y Street Art
+
+Cerámica y Alfarería
+
+Grabado y Serigrafía
+
+Arte Abstracto y Contemporáneo
+
+Retratos Personalizados
+
+🤹‍♂️ Artes Circenses
+Payasos y Animadores Infantiles
+
+Malabaristas y Equilibristas
+
+Contorsionistas y Acróbatas
+
+Magos e Ilusionistas
+
+Trapecistas y Aéreos
+
+Zanquistas y Performers de Calle
+
+Circo Teatral y Clown
+
+Espectáculos de Fuego y LED
+
+Recreacionistas y Dinamizadores de Eventos
+
+Shows de Marionetas y Sombras Chinas
+
+🎭 Artes Escénicas
+Actores de Teatro
+
+Actores de Cine y Televisión
+
+Doblaje y Voice Over
+
+Danza Clásica y Contemporánea
+
+Baile Urbano y Hip Hop
+
+Bailes Latinos (Salsa, Bachata, Tango, etc.)
+
+Danza Folclórica y Tradicional
+
+Teatro Infantil y Familiar
+
+Improvisación Teatral
+
+Teatro Musical y Opera
+
+🎵 Artes Musicales
+Bandas de Rock y Pop
+
+Mariachis y Música Regional
+
+Cantantes Solistas
+
+Dúos y Tríos Musicales
+
+Músicos de Jazz y Blues
+
+DJs y Productores de Música Electrónica
+
+Orquestas y Ensambles Clásicos
+
+Música para Eventos y Bodas
+
+Compositores y Letristas
+
+Músicos de Calle y Performances en Vivo
+
+📖 Artes Literarias
+Escritores y Novelistas
+
+Poetas y Slam Poetry
+
+Editores y Correctores de Texto
+
+Guionistas de Cine y TV
+
+Copywriters y Redactores Publicitarios
+
+Escritores de Blogs y Contenido Digital
+
+Críticos de Arte y Literatura
+
+Narradores y Cuentacuentos
+
+Ensayistas y Columnistas
+
+Traductores Literarios
+
+💻 Artes Digitales
+Diseñadores UI/UX
+
+Desarrolladores Frontend y Backend
+
+Ilustradores y Artistas Conceptuales
+
+Animación 2D y 3D
+
+Diseño de Videojuegos
+
+Modelado y Escultura Digital
+
+Realidad Aumentada y Virtual
+
+Diseño Gráfico y Branding
+
+Fotografía y Arte Digital
+
+NFTs y Criptoarte
+
+🎨 Creativos y Diseñadores
+Chefs y Gastronomía Creativa
+
+Diseñadores de Moda y Alta Costura
+
+Estilistas y Maquilladores de Moda
+
+Diseñadores de Calzado y Accesorios
+
+Escaparatistas y Visual Merchandising
+
+Diseño de Empaques y Packaging
+
+Creativos Publicitarios y Brand Strategists
+
+Diseñadores de Juguetes y Objetos
+
+Moda Sostenible y Eco-Diseño
+
+Food Stylists y Creativos Gastronómicos
+
+🎤 Conferencistas e Instructores
+Oradores Motivacionales
+
+Conferencistas de Negocios y Emprendimiento
+
+Talleristas y Formadores Culturales
+
+Coaches de Desarrollo Personal y Profesional
+
+Docentes de Artes y Cultura
+
+Instructores de Danza y Teatro
+
+Maestros de Música e Instrumentistas
+
+Creadores de Contenido Educativo
+
+Capacitadores en Tecnología y Diseño
+
+Facilitadores de Innovación y Creatividad
+
+📲 Creadores de Contenido Digital
+Foodies y Reseñadores Gastronómicos
+
+UGC (User Generated Content) para Marcas
+
+Marca Personal y Desarrollo Profesional
+
+Marketing y Negocios Digitales
+
+Moda y Belleza
+
+Comedia y Entretenimiento
+
+Creadores de Contenido Familiar y Parenting
+
+Viajes y Estilo de Vida
+
+Tecnología y Gadgets
+
+Educación y Divulgación

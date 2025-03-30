@@ -54,42 +54,46 @@ export default function EventCard({
   };
 
   return (
-    <Link href={`/event/${id}`} className="block">
-      <Card className="overflow-hidden">
-        <div className="flex flex-col sm:flex-row">
-          <div className="sm:w-1/3 relative">
+    <Link href={`/event/${id}`} className="block h-full">
+      <Card className="overflow-hidden h-full">
+        <div className="flex flex-col h-full">
+          <div className="relative h-40">
             <img 
               src={imageUrl || "https://via.placeholder.com/500x300"} 
               alt={name} 
-              className="w-full h-full sm:h-32 object-cover"
+              className="w-full h-full object-cover"
             />
             <Badge className="absolute top-2 left-2" variant={isVirtual ? "secondary" : "default"}>
               {isVirtual ? "Virtual" : "Presencial"}
             </Badge>
-          </div>
-          <CardContent className="p-3 flex-1">
-            <div className="flex justify-between">
-              <h3 className="font-medium">{name}</h3>
-              <span className="text-primary font-medium">{formatPrice(price)}</span>
+            <div className="absolute top-2 right-2">
+              <Badge variant="outline" className="bg-white/80">
+                {formatPrice(price)}
+              </Badge>
             </div>
-            <p className="text-muted-foreground text-sm mt-1 flex items-center">
-              <Calendar className="h-4 w-4 mr-1" />
-              {format(date, "EEEE, d 'de' MMMM • HH:mm", { locale: es })}
-            </p>
-            <p className="text-muted-foreground text-sm mt-1 flex items-center">
-              {isVirtual ? (
-                <>
-                  <Video className="h-4 w-4 mr-1" />
-                  Evento virtual
-                </>
-              ) : (
-                <>
-                  <MapPin className="h-4 w-4 mr-1" />
-                  {location}
-                </>
-              )}
-            </p>
-            <div className="flex mt-2 border-t border-border pt-2">
+          </div>
+          <CardContent className="p-3 flex-1 flex flex-col">
+            <div>
+              <h3 className="font-medium truncate">{name}</h3>
+              <p className="text-muted-foreground text-sm mt-1 flex items-center">
+                <Calendar className="h-4 w-4 mr-1 flex-shrink-0" />
+                <span className="truncate">{format(date, "EEEE, d 'de' MMMM • HH:mm", { locale: es })}</span>
+              </p>
+              <p className="text-muted-foreground text-sm mt-1 flex items-center">
+                {isVirtual ? (
+                  <>
+                    <Video className="h-4 w-4 mr-1 flex-shrink-0" />
+                    <span className="truncate">Evento virtual</span>
+                  </>
+                ) : (
+                  <>
+                    <MapPin className="h-4 w-4 mr-1 flex-shrink-0" />
+                    <span className="truncate">{location}</span>
+                  </>
+                )}
+              </p>
+            </div>
+            <div className="flex mt-auto border-t border-border pt-2">
               <Button 
                 variant="ghost" 
                 size="sm" 
@@ -97,7 +101,7 @@ export default function EventCard({
                 onClick={handleSave}
               >
                 <Bookmark className="h-4 w-4 mr-1" />
-                Guardar
+                <span className="hidden sm:inline-block">Guardar</span>
               </Button>
               <Button 
                 variant="ghost" 
@@ -106,7 +110,7 @@ export default function EventCard({
                 onClick={handleShare}
               >
                 <Share2 className="h-4 w-4 mr-1" />
-                Compartir
+                <span className="hidden sm:inline-block">Compartir</span>
               </Button>
             </div>
           </CardContent>

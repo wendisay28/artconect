@@ -5,12 +5,14 @@ import { useAuth } from "@/context/auth-context";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useWebSocket, ChatMessage as WebSocketChatMessage } from "@/lib/websocket";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from "date-fns";
+import { ChatMessage, ChatTypingIndicator } from "@/components/chat-message";
 import { Send, ArrowLeft, MoreVertical, Info, UserCheck, VideoIcon, Phone } from "lucide-react";
 import { 
   DropdownMenu,
@@ -28,7 +30,31 @@ export default function ChatPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [message, setMessage] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+  const [localMessages, setLocalMessages] = useState<any[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // Initialize WebSocket
+  const { 
+    status: wsStatus, 
+    messages: wsMessages, 
+    sendChatMessage, 
+    updateUserStatus,
+    connect: connectWs
+  } = useWebSocket();
+  
+  // Get other user details for the chat
+  const getOtherUser = () => {
+    if (!chatDetails) return null;
+    
+    const otherUserId = chatDetails.user1Id === user?.uid 
+      ? chatDetails.user2Id 
+      : chatDetails.user1Id;
+    
+    return chatDetails.participants?.find(p => p.id === otherUserId);
+  };
+
+  const otherUser = getOtherUser();
   
   // Get all chats for the current user
   const { data: chats, isLoading: isLoadingChats } = useQuery({
@@ -118,30 +144,102 @@ export default function ChatPage() {
     }
   }, [artistId, id, user, artistDetails]);
 
+  // Process WebSocket messages
+  useEffect(() => {
+    // Filter only messages for this chat
+    const newWsMessages = wsMessages.filter(msg => 
+      msg.type === 'chat_message' && 
+      msg.payload.chatId === Number(id)
+    );
+    
+    if (newWsMessages.length > 0) {
+      // Add new real-time messages to the local state
+      const chatMessages = newWsMessages.map(msg => {
+        const chatMsg = msg as WebSocketChatMessage;
+        return {
+          id: `ws-${chatMsg.payload.timestamp}`,
+          senderId: chatMsg.payload.senderId,
+          content: chatMsg.payload.content,
+          createdAt: new Date(chatMsg.payload.timestamp).toISOString(),
+          status: 'sent'
+        };
+      });
+      
+      setLocalMessages(prev => [...prev, ...chatMessages]);
+      
+      // Invalidate the messages query to fetch from server
+      queryClient.invalidateQueries({ queryKey: ['/api/chats', id, 'messages'] });
+    }
+  }, [wsMessages, id]);
+
+  // Update user status in WebSocket when joining/leaving chat
+  useEffect(() => {
+    if (user && wsStatus === 'open' && id) {
+      // Set status to online when joining chat
+      updateUserStatus(Number(user.uid), 'online');
+      
+      // Set status to offline when leaving chat
+      return () => {
+        updateUserStatus(Number(user.uid), 'offline');
+      };
+    }
+  }, [user, wsStatus, id, updateUserStatus]);
+
+  // Initialize WebSocket connection when entering chat
+  useEffect(() => {
+    if (id && user) {
+      connectWs();
+    }
+  }, [id, user, connectWs]);
+
   // Scroll to bottom when messages change
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages]);
+  }, [messages, localMessages]);
+
+  // Handle typing indicator
+  useEffect(() => {
+    let typingTimer: NodeJS.Timeout;
+    
+    if (message && message.length > 0 && !isTyping && user && id && otherUser) {
+      setIsTyping(true);
+      
+      // Reset typing status after 3 seconds of inactivity
+      typingTimer = setTimeout(() => {
+        setIsTyping(false);
+      }, 3000);
+    }
+    
+    return () => {
+      clearTimeout(typingTimer);
+    };
+  }, [message, isTyping, user, id, otherUser]);
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!message.trim() || !id) return;
+    if (!message.trim() || !id || !user) return;
+    
+    // Add the message to local state immediately for responsive UI
+    const tempMessage = {
+      id: `temp-${Date.now()}`,
+      senderId: user.uid,
+      content: message,
+      createdAt: new Date().toISOString(),
+      status: 'sending' as const
+    };
+    
+    setLocalMessages(prev => [...prev, tempMessage]);
+    
+    // Send via WebSocket for real-time updates
+    if (wsStatus === 'open') {
+      sendChatMessage(Number(id), Number(user.uid), message);
+    }
+    
+    // Also send via API for persistence
     sendMessageMutation.mutate(message);
   };
-
-  const getOtherUser = () => {
-    if (!chatDetails) return null;
-    
-    const otherUserId = chatDetails.user1Id === user?.uid 
-      ? chatDetails.user2Id 
-      : chatDetails.user1Id;
-    
-    return chatDetails.participants?.find(p => p.id === otherUserId);
-  };
-
-  const otherUser = getOtherUser();
 
   // If no chat is selected, show the chat list
   if (!id) {
@@ -257,35 +355,81 @@ export default function ChatPage() {
       </header>
       
       {/* Messages area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4">
         {isLoadingMessages ? (
-          Array(5).fill(0).map((_, i) => (
-            <div key={i} className={`flex ${i % 2 === 0 ? "justify-start" : "justify-end"}`}>
-              <Skeleton className={`h-12 w-2/3 rounded-lg ${i % 2 === 0 ? "rounded-tl-none" : "rounded-tr-none"}`} />
-            </div>
-          ))
-        ) : messages && messages.length > 0 ? (
-          messages.map((msg) => {
-            const isSentByMe = msg.senderId === user?.uid;
-            return (
-              <div key={msg.id} className={`flex ${isSentByMe ? "justify-end" : "justify-start"}`}>
-                <div className={`max-w-[70%] ${isSentByMe ? "bg-primary text-primary-foreground" : "bg-muted"} rounded-lg p-3 ${isSentByMe ? "rounded-tr-none" : "rounded-tl-none"}`}>
-                  <p className="break-words">{msg.content}</p>
-                  <p className="text-xs opacity-70 text-right mt-1">
-                    {format(new Date(msg.createdAt), "HH:mm")}
+          <div className="space-y-4">
+            {Array(5).fill(0).map((_, i) => (
+              <div key={i} className={`flex ${i % 2 === 0 ? "justify-start" : "justify-end"}`}>
+                <Skeleton className={`h-12 w-2/3 rounded-lg ${i % 2 === 0 ? "rounded-tl-none" : "rounded-tr-none"}`} />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div>
+            {/* Server fetched messages */}
+            {messages && messages.length > 0 ? (
+              <div className="space-y-1">
+                {messages.map((msg) => {
+                  const isSentByMe = msg.senderId === user?.uid;
+                  const senderName = isSentByMe 
+                    ? (user?.displayName || 'Me') 
+                    : (otherUser?.displayName || 'User');
+                  const senderAvatar = isSentByMe 
+                    ? user?.photoURL 
+                    : otherUser?.photoURL;
+                    
+                  return (
+                    <ChatMessage
+                      key={msg.id}
+                      id={String(msg.id)}
+                      senderId={Number(msg.senderId)}
+                      senderName={senderName}
+                      senderAvatar={senderAvatar}
+                      content={msg.content}
+                      timestamp={new Date(msg.createdAt)}
+                      isCurrentUser={isSentByMe}
+                      status="delivered"
+                    />
+                  );
+                })}
+              </div>
+            ) : localMessages.length === 0 ? (
+              <div className="h-full flex items-center justify-center">
+                <div className="text-center">
+                  <p className="text-muted-foreground">No hay mensajes</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Envía un mensaje para iniciar la conversación
                   </p>
                 </div>
               </div>
-            );
-          })
-        ) : (
-          <div className="h-full flex items-center justify-center">
-            <div className="text-center">
-              <p className="text-muted-foreground">No hay mensajes</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Envía un mensaje para iniciar la conversación
-              </p>
-            </div>
+            ) : null}
+            
+            {/* Local temporary messages (from WebSocket or pending) */}
+            {localMessages.length > 0 && (
+              <div className="space-y-1">
+                {localMessages.map((msg) => {
+                  const isSentByMe = msg.senderId === user?.uid;
+                  return (
+                    <ChatMessage
+                      key={msg.id}
+                      id={msg.id}
+                      senderId={Number(msg.senderId)}
+                      senderName={user?.displayName || 'Me'}
+                      senderAvatar={user?.photoURL}
+                      content={msg.content}
+                      timestamp={new Date(msg.createdAt)}
+                      isCurrentUser={isSentByMe}
+                      status={msg.status}
+                    />
+                  );
+                })}
+              </div>
+            )}
+            
+            {/* Typing indicator */}
+            {isTyping && otherUser && (
+              <ChatTypingIndicator name={otherUser.displayName} />
+            )}
           </div>
         )}
         <div ref={messagesEndRef} />
