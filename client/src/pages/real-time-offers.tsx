@@ -31,7 +31,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MapPin, Clock, DollarSign, User, Calendar, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { MapPin, Clock, DollarSign, User, Calendar, CheckCircle, XCircle, AlertCircle, X } from "lucide-react";
 
 interface ArtistResponse {
   id: number;
@@ -69,18 +69,36 @@ export default function RealTimeOffersPage() {
   const [activeTab, setActiveTab] = useState("my-requests");
   const [newRequestDialogOpen, setNewRequestDialogOpen] = useState(false);
   
+  // Datos de categorías y subcategorías
+  const categorias = {
+    "Artes Musicales": ["Músicos", "Cantantes", "Compositores", "Directores"],
+    "Artes Visuales": ["Pintores", "Escultores", "Fotógrafos", "Ilustradores"],
+    "Artes Escénicas": ["Actores", "Bailarines", "Comediantes", "Malabaristas"],
+    "Diseño y Creatividad": ["Diseñadores Gráficos", "Diseñadores Web", "Diseñadores de Moda"],
+    "Producción Audiovisual": ["Productores", "Directores", "Videógrafos", "Editores"],
+    "Escritura y Literatura": ["Escritores", "Poetas", "Guionistas", "Editores"],
+    "Gastronomía": ["Chefs", "Reposteros", "Mixólogos", "Cocineros"],
+    "Artesanía": ["Ceramistas", "Joyeros", "Carpinteros", "Tejedores"],
+    "Tecnología Creativa": ["Desarrolladores de Apps", "Diseñadores UX/UI", "Animadores 3D"],
+    "Servicios para Eventos": ["Organizadores", "Decoradores", "DJs", "Presentadores", "Fotógrafos de Eventos"]
+  };
+  
   // Form state
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     categoryId: "",
     subcategoryId: "",
+    tags: [] as string[],
     price: "",
+    priceUnit: "total", // "total" | "hora"
     location: "",
     useCurrentLocation: true,
     date: "",
     time: ""
   });
+  
+  const [newTag, setNewTag] = useState("");
 
   // Mocked data for demonstration
   const userRequests: RequestOffer[] = [
@@ -170,7 +188,9 @@ export default function RealTimeOffersPage() {
       description: "",
       categoryId: "",
       subcategoryId: "",
+      tags: [],
       price: "",
+      priceUnit: "total",
       location: "",
       useCurrentLocation: true,
       date: "",
@@ -294,15 +314,113 @@ export default function RealTimeOffersPage() {
                       </div>
                     </div>
                     <div className="space-y-2">
+                      <Label>Etiquetas profesionales (máx 2)</Label>
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {formData.tags?.map(tag => (
+                          <Badge key={tag} variant="secondary" className="flex items-center gap-1">
+                            {tag}
+                            <button onClick={() => {
+                              setFormData(prev => ({
+                                ...prev,
+                                tags: prev.tags.filter(t => t !== tag)
+                              }));
+                            }}>
+                              <X className="h-3 w-3 hover:text-destructive" />
+                            </button>
+                          </Badge>
+                        ))}
+                      </div>
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Ej: Cantante Pop, Pianista"
+                          value={newTag}
+                          onChange={(e) => setNewTag(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              if (!newTag.trim()) return;
+                              if (formData.tags.length >= 2) {
+                                toast({
+                                  variant: "destructive",
+                                  description: "Solo puedes añadir hasta 2 etiquetas",
+                                });
+                                return;
+                              }
+                              if (formData.tags.includes(newTag.trim())) {
+                                toast({
+                                  variant: "destructive",
+                                  description: "Esta etiqueta ya existe",
+                                });
+                                return;
+                              }
+                              setFormData(prev => ({
+                                ...prev,
+                                tags: [...prev.tags, newTag.trim()]
+                              }));
+                              setNewTag("");
+                            }
+                          }}
+                        />
+                        <Button 
+                          type="button" 
+                          size="sm"
+                          onClick={() => {
+                            if (!newTag.trim()) return;
+                            if (formData.tags.length >= 2) {
+                              toast({
+                                variant: "destructive",
+                                description: "Solo puedes añadir hasta 2 etiquetas",
+                              });
+                              return;
+                            }
+                            if (formData.tags.includes(newTag.trim())) {
+                              toast({
+                                variant: "destructive",
+                                description: "Esta etiqueta ya existe",
+                              });
+                              return;
+                            }
+                            setFormData(prev => ({
+                              ...prev,
+                              tags: [...prev.tags, newTag.trim()]
+                            }));
+                            setNewTag("");
+                          }}
+                        >
+                          Añadir
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Ejemplos: Cantante Pop, Pianista, Fotógrafo de Bodas, Cocinero Vegano
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-2">
                       <Label htmlFor="price">Presupuesto (COP)</Label>
-                      <Input
-                        id="price"
-                        name="price"
-                        type="number"
-                        placeholder="Ej: 300000"
-                        value={formData.price}
-                        onChange={handleInputChange}
-                      />
+                      <div className="grid grid-cols-4 gap-2">
+                        <div className="col-span-3">
+                          <Input
+                            id="price"
+                            name="price"
+                            type="number"
+                            placeholder="Ej: 300000"
+                            value={formData.price}
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                        <Select 
+                          value={formData.priceUnit} 
+                          onValueChange={(value) => setFormData(prev => ({ ...prev, priceUnit: value }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Unidad" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="total">Total</SelectItem>
+                            <SelectItem value="hora">Por hora</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">

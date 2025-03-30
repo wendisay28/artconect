@@ -30,6 +30,20 @@ export default function ProfilePage() {
   const [showAuthDialog, setShowAuthDialog] = useState(false);
   const [newSkill, setNewSkill] = useState("");
   
+  // Datos de categorías y subcategorías
+  const categorias = {
+    "Artes Musicales": ["Músicos", "Cantantes", "Compositores", "Directores"],
+    "Artes Visuales": ["Pintores", "Escultores", "Fotógrafos", "Ilustradores"],
+    "Artes Escénicas": ["Actores", "Bailarines", "Comediantes", "Malabaristas"],
+    "Diseño y Creatividad": ["Diseñadores Gráficos", "Diseñadores Web", "Diseñadores de Moda"],
+    "Producción Audiovisual": ["Productores", "Directores", "Videógrafos", "Editores"],
+    "Escritura y Literatura": ["Escritores", "Poetas", "Guionistas", "Editores"],
+    "Gastronomía": ["Chefs", "Reposteros", "Mixólogos", "Cocineros"],
+    "Artesanía": ["Ceramistas", "Joyeros", "Carpinteros", "Tejedores"],
+    "Tecnología Creativa": ["Desarrolladores de Apps", "Diseñadores UX/UI", "Animadores 3D"],
+    "Servicios para Eventos": ["Organizadores", "Decoradores", "DJs", "Presentadores", "Fotógrafos de Eventos"]
+  };
+  
   // User data
   const { data: userData, isLoading: isLoadingUser } = useQuery({
     queryKey: ['/api/users/profile'],
@@ -79,7 +93,12 @@ export default function ProfilePage() {
     location: "",
     skills: [] as string[],
     photoURL: "",
+    category: "",
+    subcategory: "",
+    tags: [] as string[],
   });
+  
+  const [newTag, setNewTag] = useState("");
 
   // Update form data when user data is loaded
   useState(() => {
@@ -92,6 +111,9 @@ export default function ProfilePage() {
         location: userData.location || "",
         skills: userData.skills || [],
         photoURL: userData.photoURL || "",
+        category: userData.category || "",
+        subcategory: userData.subcategory || "",
+        tags: userData.tags || [],
       });
     }
   });
@@ -162,9 +184,36 @@ export default function ProfilePage() {
         location: userData.location || "",
         skills: userData.skills || [],
         photoURL: userData.photoURL || "",
+        category: userData.category || "",
+        subcategory: userData.subcategory || "",
+        tags: userData.tags || [],
       });
     }
     setIsEditing(false);
+  };
+  
+  const handleAddTag = () => {
+    if (!newTag.trim()) return;
+    if (formData.tags.length >= 2) {
+      toast({
+        variant: "destructive",
+        description: "Solo puedes añadir hasta 2 etiquetas",
+      });
+      return;
+    }
+    if (formData.tags.includes(newTag.trim())) {
+      toast({
+        variant: "destructive",
+        description: "Esta etiqueta ya existe",
+      });
+      return;
+    }
+    setFormData(prev => ({ ...prev, tags: [...prev.tags, newTag.trim()] }));
+    setNewTag("");
+  };
+
+  const handleRemoveTag = (tag: string) => {
+    setFormData(prev => ({ ...prev, tags: prev.tags.filter(t => t !== tag) }));
   };
 
   const handleDeleteAccount = async () => {
@@ -959,6 +1008,83 @@ export default function ProfilePage() {
                   <Button type="button" onClick={handleAddSkill} size="sm">
                     Añadir
                   </Button>
+                </div>
+              </div>
+              
+              <div className="space-y-4 border p-4 rounded-lg bg-muted/10">
+                <div className="text-lg font-semibold">Información Profesional de Artista</div>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Esta información será utilizada para encontrar tu perfil como artista en las búsquedas
+                </p>
+                
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="category">Categoría</Label>
+                    <Select
+                      value={formData.category}
+                      onValueChange={(value) => {
+                        handleSelectChange("category", value);
+                        // Reset subcategory when category changes
+                        handleSelectChange("subcategory", "");
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecciona una categoría" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.keys(categorias).map((cat) => (
+                          <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {formData.category && (
+                    <div className="space-y-2">
+                      <Label htmlFor="subcategory">Subcategoría</Label>
+                      <Select
+                        value={formData.subcategory}
+                        onValueChange={(value) => handleSelectChange("subcategory", value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecciona una subcategoría" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categorias[formData.category]?.map((subcat) => (
+                            <SelectItem key={subcat} value={subcat}>{subcat}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  
+                  <div className="space-y-2">
+                    <Label>Etiquetas profesionales (máx 2)</Label>
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {formData.tags.map(tag => (
+                        <Badge key={tag} variant="secondary" className="flex items-center gap-1">
+                          {tag}
+                          <button onClick={() => handleRemoveTag(tag)}>
+                            <X className="h-3 w-3 hover:text-destructive" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Ej: Cantante Pop, Pianista"
+                        value={newTag}
+                        onChange={(e) => setNewTag(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
+                      />
+                      <Button type="button" onClick={handleAddTag} size="sm">
+                        Añadir
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Ejemplos: Cantante Pop, Pianista, Fotógrafo de Bodas, Cocinero Vegano
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
