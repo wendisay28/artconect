@@ -14,8 +14,27 @@ export default function ExplorerPage() {
   const { locationData } = useLocation();
   const { toast } = useToast();
 
+  // Define types for items
+  interface ExplorerItem {
+    id: string | number;
+    name?: string;
+    displayName?: string;
+    photoURL?: string;
+    image?: string;
+    role?: string;
+    category?: string;
+    location?: string;
+    distance?: number;
+    minPrice?: number;
+    maxPrice?: number;
+    priceUnit?: string;
+    price?: number;
+    isFree?: boolean;
+    age?: number;
+  }
+
   // Fetch artists or events based on active tab
-  const { data: items, isLoading, refetch } = useQuery({
+  const { data: items, isLoading, refetch } = useQuery<ExplorerItem[]>({
     queryKey: [activeTab === "artists" ? '/api/artists/explore' : '/api/events/explore', 
                locationData?.coordinates?.latitude, 
                locationData?.coordinates?.longitude],
@@ -73,6 +92,7 @@ export default function ExplorerPage() {
         <div className="flex items-center">
           <SearchFilters 
             onApplyFilters={handleApplyFilters}
+            filterType={activeTab}
             triggerButton={
               <Button variant="outline" size="sm" className="mr-2">
                 <SlidersHorizontal className="h-4 w-4 mr-2" />
@@ -162,7 +182,8 @@ export default function ExplorerPage() {
               Intenta ajustar los filtros o cambiar tu ubicación
             </p>
             <SearchFilters 
-              onApplyFilters={handleApplyFilters} 
+              onApplyFilters={handleApplyFilters}
+              filterType={activeTab}
               triggerButton={
                 <Button>
                   Ajustar filtros
