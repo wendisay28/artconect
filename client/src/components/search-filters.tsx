@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Sheet,
   SheetContent,
@@ -33,55 +33,167 @@ interface FilterValues {
   distance: number;
   dateFrom: Date | undefined;
   dateTo: Date | undefined;
+  isFree?: boolean;
+  isVirtual?: boolean;
+  minRating?: number;
 }
 
 interface SearchFiltersProps {
   onApplyFilters: (filters: FilterValues) => void;
   triggerButton?: React.ReactNode;
+  filterType: 'artists' | 'events';
 }
 
-const categories: Category[] = [
+const artistCategories: Category[] = [
   { id: "musicians", name: "Músicos" },
   { id: "visual_artists", name: "Artistas visuales" },
   { id: "dancers", name: "Bailarines" },
   { id: "producers", name: "Productores" },
+  { id: "djs", name: "DJs" },
+  { id: "actors", name: "Actores" },
 ];
 
-const subcategories: Record<string, Category[]> = {
+const eventCategories: Category[] = [
+  { id: "concerts", name: "Conciertos" },
+  { id: "exhibitions", name: "Exposiciones" },
+  { id: "workshops", name: "Talleres" },
+  { id: "theater", name: "Teatro" },
+  { id: "festivals", name: "Festivales" },
+  { id: "nightlife", name: "Vida nocturna" },
+];
+
+const artistSubcategories: Record<string, Category[]> = {
   musicians: [
     { id: "guitarists", name: "Guitarristas" },
     { id: "drummers", name: "Bateristas" },
     { id: "singers", name: "Cantantes" },
     { id: "bassists", name: "Bajistas" },
+    { id: "pianists", name: "Pianistas" },
+    { id: "violinists", name: "Violinistas" },
+    { id: "saxophonists", name: "Saxofonistas" },
   ],
   visual_artists: [
     { id: "painters", name: "Pintores" },
     { id: "photographers", name: "Fotógrafos" },
     { id: "sculptors", name: "Escultores" },
+    { id: "illustrators", name: "Ilustradores" },
+    { id: "graphic_designers", name: "Diseñadores gráficos" },
+    { id: "digital_artists", name: "Artistas digitales" },
   ],
   dancers: [
     { id: "contemporary", name: "Contemporáneo" },
     { id: "urban", name: "Urbano" },
     { id: "ballet", name: "Ballet" },
+    { id: "salsa", name: "Salsa" },
+    { id: "tango", name: "Tango" },
+    { id: "flamenco", name: "Flamenco" },
+    { id: "breakdance", name: "Breakdance" },
   ],
   producers: [
     { id: "music_producers", name: "Productores musicales" },
     { id: "sound_engineers", name: "Ingenieros de sonido" },
+    { id: "lighting_designers", name: "Diseñadores de iluminación" },
+    { id: "event_producers", name: "Productores de eventos" },
+  ],
+  djs: [
+    { id: "house_dj", name: "House" },
+    { id: "techno_dj", name: "Techno" },
+    { id: "reggaeton_dj", name: "Reggaeton" },
+    { id: "hiphop_dj", name: "Hip Hop" },
+    { id: "electronic_dj", name: "Electrónica" },
+    { id: "tropical_dj", name: "Tropical" },
+  ],
+  actors: [
+    { id: "theater_actors", name: "Teatro" },
+    { id: "film_actors", name: "Cine" },
+    { id: "voice_actors", name: "Voz" },
+    { id: "improv_actors", name: "Improvisación" },
   ],
 };
 
-export default function SearchFilters({ onApplyFilters, triggerButton }: SearchFiltersProps) {
+const eventSubcategories: Record<string, Category[]> = {
+  concerts: [
+    { id: "rock_concerts", name: "Rock" },
+    { id: "pop_concerts", name: "Pop" },
+    { id: "jazz_concerts", name: "Jazz" },
+    { id: "classical_concerts", name: "Clásica" },
+    { id: "electronic_concerts", name: "Electrónica" },
+    { id: "reggaeton_concerts", name: "Reggaeton" },
+    { id: "salsa_concerts", name: "Salsa" },
+  ],
+  exhibitions: [
+    { id: "painting_exhibitions", name: "Pintura" },
+    { id: "photography_exhibitions", name: "Fotografía" },
+    { id: "sculpture_exhibitions", name: "Escultura" },
+    { id: "digital_art_exhibitions", name: "Arte digital" },
+    { id: "mixed_media_exhibitions", name: "Técnicas mixtas" },
+  ],
+  workshops: [
+    { id: "music_workshops", name: "Música" },
+    { id: "art_workshops", name: "Arte" },
+    { id: "dance_workshops", name: "Danza" },
+    { id: "theater_workshops", name: "Teatro" },
+    { id: "creative_writing_workshops", name: "Escritura creativa" },
+  ],
+  theater: [
+    { id: "comedy_theater", name: "Comedia" },
+    { id: "drama_theater", name: "Drama" },
+    { id: "musical_theater", name: "Musical" },
+    { id: "improv_theater", name: "Improvisación" },
+    { id: "experimental_theater", name: "Experimental" },
+  ],
+  festivals: [
+    { id: "music_festivals", name: "Música" },
+    { id: "art_festivals", name: "Arte" },
+    { id: "film_festivals", name: "Cine" },
+    { id: "food_festivals", name: "Gastronomía" },
+    { id: "cultural_festivals", name: "Cultural" },
+  ],
+  nightlife: [
+    { id: "clubs", name: "Discotecas" },
+    { id: "bars", name: "Bares" },
+    { id: "live_music_venues", name: "Música en vivo" },
+    { id: "rooftops", name: "Terrazas" },
+    { id: "themed_parties", name: "Fiestas temáticas" },
+  ],
+};
+
+export default function SearchFilters({ onApplyFilters, triggerButton, filterType }: SearchFiltersProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [filters, setFilters] = useState<FilterValues>({
-    category: "musicians",
-    subcategory: "guitarists",
+    category: filterType === 'artists' ? "musicians" : "concerts",
+    subcategory: filterType === 'artists' ? "guitarists" : "rock_concerts",
     priceRange: [50000, 500000],
     location: "",
     useCurrentLocation: true,
     distance: 25,
     dateFrom: undefined,
     dateTo: undefined,
+    isFree: false,
+    isVirtual: false,
+    minRating: 0,
   });
+
+  // Determine which categories and subcategories to use based on filterType
+  const categories = filterType === 'artists' ? artistCategories : eventCategories;
+  const subcategories = filterType === 'artists' ? artistSubcategories : eventSubcategories;
+
+  // Reset filters when filterType changes
+  useEffect(() => {
+    setFilters({
+      category: filterType === 'artists' ? "musicians" : "concerts",
+      subcategory: filterType === 'artists' ? "guitarists" : "rock_concerts",
+      priceRange: [50000, 500000],
+      location: "",
+      useCurrentLocation: true,
+      distance: 25,
+      dateFrom: undefined,
+      dateTo: undefined,
+      isFree: false,
+      isVirtual: false,
+      minRating: 0,
+    });
+  }, [filterType]);
 
   const handleCategoryClick = (categoryId: string) => {
     setFilters({
@@ -121,14 +233,17 @@ export default function SearchFilters({ onApplyFilters, triggerButton }: SearchF
 
   const handleClearFilters = () => {
     setFilters({
-      category: "musicians",
-      subcategory: "guitarists",
+      category: filterType === 'artists' ? "musicians" : "concerts",
+      subcategory: filterType === 'artists' ? "guitarists" : "rock_concerts",
       priceRange: [50000, 500000],
       location: "",
       useCurrentLocation: true,
       distance: 25,
       dateFrom: undefined,
       dateTo: undefined,
+      isFree: false,
+      isVirtual: false,
+      minRating: 0,
     });
   };
 
@@ -136,7 +251,7 @@ export default function SearchFilters({ onApplyFilters, triggerButton }: SearchF
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
         {triggerButton || (
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" id="open-filters-btn">
             <SlidersHorizontal className="h-4 w-4 mr-2" />
             Filtros
           </Button>
@@ -312,6 +427,55 @@ export default function SearchFilters({ onApplyFilters, triggerButton }: SearchF
               </div>
             </div>
           </div>
+          
+          {/* Event specific filters */}
+          {filterType === 'events' && (
+            <div>
+              <h3 className="font-medium mb-2">Opciones de eventos</h3>
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="isFree" 
+                    checked={filters.isFree}
+                    onCheckedChange={(checked) => 
+                      setFilters({ ...filters, isFree: checked === true })
+                    }
+                  />
+                  <Label htmlFor="isFree">Solo eventos gratuitos</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="isVirtual" 
+                    checked={filters.isVirtual}
+                    onCheckedChange={(checked) => 
+                      setFilters({ ...filters, isVirtual: checked === true })
+                    }
+                  />
+                  <Label htmlFor="isVirtual">Incluir eventos virtuales</Label>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Artist specific filters */}
+          {filterType === 'artists' && (
+            <div>
+              <h3 className="font-medium mb-2">Calificación mínima</h3>
+              <div className="flex items-center space-x-2">
+                <Slider
+                  value={[filters.minRating || 0]}
+                  min={0}
+                  max={5}
+                  step={0.5}
+                  onValueChange={(value) => setFilters({ ...filters, minRating: value[0] })}
+                  className="w-full"
+                />
+                <span className="text-sm font-medium text-primary min-w-[30px] text-center">
+                  {filters.minRating || 0}/5
+                </span>
+              </div>
+            </div>
+          )}
           
           {/* Action buttons */}
           <div className="flex space-x-4 pt-4">

@@ -20,7 +20,6 @@ export default function SearchPage() {
   
   const [activeTab, setActiveTab] = useState(initialType);
   const [searchTerm, setSearchTerm] = useState("");
-  const [showFilters, setShowFilters] = useState(false);
   const [appliedFilters, setAppliedFilters] = useState<any>(null);
   const { locationData } = useLocation();
   const { toast } = useToast();
@@ -62,7 +61,6 @@ export default function SearchPage() {
 
   const handleApplyFilters = (filters: any) => {
     setAppliedFilters(filters);
-    setShowFilters(false);
     toast({
       title: "Filtros aplicados",
       description: "Los resultados han sido actualizados según tus filtros",
@@ -108,7 +106,7 @@ export default function SearchPage() {
             variant="outline" 
             size="icon" 
             className="absolute right-1 top-1/2 transform -translate-y-1/2"
-            onClick={() => setShowFilters(true)}
+            onClick={() => document.getElementById('open-filters-btn')?.click()}
           >
             <Filter className="h-4 w-4" />
           </Button>
@@ -232,6 +230,7 @@ export default function SearchPage() {
       <SearchFilters 
         onApplyFilters={handleApplyFilters}
         triggerButton={<div />} // Hidden trigger, we show manually
+        filterType={activeTab as 'artists' | 'events'}
       />
     </div>
   );
