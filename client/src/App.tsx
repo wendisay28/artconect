@@ -14,6 +14,7 @@ import FavoritesPage from "@/pages/favorites";
 import ChatPage from "@/pages/chat";
 import ProfilePage from "@/pages/profile";
 import SearchPage from "@/pages/search";
+import GeoRecommendationsPage from "@/pages/geo-recommendations";
 import NotFound from "@/pages/not-found";
 import BottomNavigation from "./components/bottom-navigation";
 import LocationModal from "./components/location-modal";
@@ -47,6 +48,7 @@ function Router() {
           <Route path="/chat/:id" component={ChatPage} />
           <Route path="/profile" component={ProfilePage} />
           <Route path="/search" component={SearchPage} />
+          <Route path="/nearby" component={GeoRecommendationsPage} />
           <Route component={NotFound} />
         </Switch>
       </main>

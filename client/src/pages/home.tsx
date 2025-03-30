@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { ChevronRight, ChevronLeft, Search, Bell, BookmarkCheck, Share2 } from "lucide-react";
+import { ChevronRight, ChevronLeft, Search, Bell, BookmarkCheck, Share2, MapPin } from "lucide-react";
 
 // Definición de tipos para los datos de API
 interface Event {
@@ -147,12 +147,20 @@ export default function HomePage() {
       <section className="mb-8">
         <div className="flex justify-between items-center mb-4">
           <h2 className="font-semibold text-xl">Artistas Recomendados</h2>
-          <Link href="/explore" className="block">
-            <span className="text-primary text-sm flex items-center cursor-pointer">
-              Ver todos
-              <ChevronRight className="h-4 w-4 ml-1" />
-            </span>
-          </Link>
+          <div className="flex items-center space-x-3">
+            <Link href="/nearby" className="block">
+              <span className="text-primary text-sm flex items-center cursor-pointer">
+                Cerca de ti
+                <MapPin className="h-3 w-3 ml-1" />
+              </span>
+            </Link>
+            <Link href="/explore" className="block">
+              <span className="text-primary text-sm flex items-center cursor-pointer">
+                Ver todos
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </span>
+            </Link>
+          </div>
         </div>
         
         <div className="overflow-x-auto pb-2 -mx-4 px-4">
@@ -181,6 +189,17 @@ export default function HomePage() {
             )}
           </div>
         </div>
+        
+        {locationData.coordinates && (
+          <div className="mt-4">
+            <Link href="/nearby">
+              <Button variant="outline" className="w-full">
+                <MapPin className="h-4 w-4 mr-2" />
+                Ver artistas cerca de {locationData.address.split(',')[0] || 'mi ubicación'}
+              </Button>
+            </Link>
+          </div>
+        )}
       </section>
       
       {/* Events Section */}
