@@ -45,12 +45,17 @@ interface SearchFiltersProps {
 }
 
 const artistCategories: Category[] = [
-  { id: "musicians", name: "Músicos" },
-  { id: "visual_artists", name: "Artistas visuales" },
-  { id: "dancers", name: "Bailarines" },
-  { id: "producers", name: "Productores" },
-  { id: "djs", name: "DJs" },
-  { id: "actors", name: "Actores" },
+  { id: "audiovisuales", name: "Artistas Audiovisuales" },
+  { id: "plasticas", name: "Artes Plásticas" },
+  { id: "circenses", name: "Artes Circenses" },
+  { id: "escenicas", name: "Artes Escénicas" },
+  { id: "musicales", name: "Artes Musicales" },
+  { id: "literarias", name: "Artes Literarias" },
+  { id: "digitales", name: "Artes Digitales" },
+  { id: "creativos", name: "Creativos" },
+  { id: "conferencistas", name: "Conferencistas e Instructores" },
+  { id: "moda", name: "Moda" },
+  { id: "contenido_digital", name: "Creadores de Contenido Digital" },
 ];
 
 const eventCategories: Category[] = [
@@ -63,51 +68,86 @@ const eventCategories: Category[] = [
 ];
 
 const artistSubcategories: Record<string, Category[]> = {
-  musicians: [
-    { id: "guitarists", name: "Guitarristas" },
-    { id: "drummers", name: "Bateristas" },
-    { id: "singers", name: "Cantantes" },
-    { id: "bassists", name: "Bajistas" },
-    { id: "pianists", name: "Pianistas" },
-    { id: "violinists", name: "Violinistas" },
-    { id: "saxophonists", name: "Saxofonistas" },
+  audiovisuales: [
+    { id: "fotografia", name: "Fotografía" },
+    { id: "videoclips", name: "Videoclips" },
+    { id: "edicion", name: "Edición" },
+    { id: "animacion", name: "Animación" },
+    { id: "direccion_cine", name: "Dirección de cine" },
   ],
-  visual_artists: [
-    { id: "painters", name: "Pintores" },
-    { id: "photographers", name: "Fotógrafos" },
-    { id: "sculptors", name: "Escultores" },
-    { id: "illustrators", name: "Ilustradores" },
-    { id: "graphic_designers", name: "Diseñadores gráficos" },
-    { id: "digital_artists", name: "Artistas digitales" },
+  plasticas: [
+    { id: "pintura", name: "Pintura" },
+    { id: "escultura", name: "Escultura" },
+    { id: "artesania", name: "Artesanía" },
+    { id: "street_art", name: "Street Art" },
+    { id: "ceramica", name: "Cerámica" },
+    { id: "grabado", name: "Grabado" },
   ],
-  dancers: [
-    { id: "contemporary", name: "Contemporáneo" },
-    { id: "urban", name: "Urbano" },
-    { id: "ballet", name: "Ballet" },
-    { id: "salsa", name: "Salsa" },
-    { id: "tango", name: "Tango" },
-    { id: "flamenco", name: "Flamenco" },
-    { id: "breakdance", name: "Breakdance" },
+  circenses: [
+    { id: "malabaristas", name: "Malabaristas" },
+    { id: "payasos", name: "Payasos" },
+    { id: "ilusionistas", name: "Ilusionistas" },
+    { id: "trapecistas", name: "Trapecistas" },
+    { id: "fuego", name: "Espectáculos de fuego" },
   ],
-  producers: [
-    { id: "music_producers", name: "Productores musicales" },
-    { id: "sound_engineers", name: "Ingenieros de sonido" },
-    { id: "lighting_designers", name: "Diseñadores de iluminación" },
-    { id: "event_producers", name: "Productores de eventos" },
+  escenicas: [
+    { id: "actores", name: "Actores" },
+    { id: "danza", name: "Danza" },
+    { id: "teatro_musical", name: "Teatro musical" },
+    { id: "improvisacion", name: "Improvisación" },
   ],
-  djs: [
-    { id: "house_dj", name: "House" },
-    { id: "techno_dj", name: "Techno" },
-    { id: "reggaeton_dj", name: "Reggaeton" },
-    { id: "hiphop_dj", name: "Hip Hop" },
-    { id: "electronic_dj", name: "Electrónica" },
-    { id: "tropical_dj", name: "Tropical" },
+  musicales: [
+    { id: "bandas", name: "Bandas" },
+    { id: "cantantes", name: "Cantantes" },
+    { id: "djs", name: "DJs" },
+    { id: "orquestas", name: "Orquestas" },
+    { id: "compositores", name: "Compositores" },
+    { id: "mariachis", name: "Mariachis" },
+    { id: "productores", name: "Productores" },
+    { id: "grupos", name: "Grupos" },
   ],
-  actors: [
-    { id: "theater_actors", name: "Teatro" },
-    { id: "film_actors", name: "Cine" },
-    { id: "voice_actors", name: "Voz" },
-    { id: "improv_actors", name: "Improvisación" },
+  literarias: [
+    { id: "escritores", name: "Escritores" },
+    { id: "guionistas", name: "Guionistas" },
+    { id: "poetas", name: "Poetas" },
+    { id: "correctores", name: "Correctores de texto" },
+  ],
+  digitales: [
+    { id: "diseno_ui_ux", name: "Diseño UI/UX" },
+    { id: "animacion_3d", name: "Animación 3D" },
+    { id: "videojuegos", name: "Videojuegos" },
+    { id: "nfts", name: "NFTs" },
+    { id: "programadores", name: "Programadores" },
+  ],
+  creativos: [
+    { id: "chef", name: "Chef" },
+    { id: "packaging", name: "Packaging" },
+    { id: "branding", name: "Branding" },
+    { id: "ilustracion", name: "Ilustración" },
+  ],
+  conferencistas: [
+    { id: "talleristas", name: "Talleristas" },
+    { id: "coaches", name: "Coaches" },
+    { id: "docentes", name: "Docentes de arte" },
+    { id: "instructores_danza", name: "Instructores de danza" },
+    { id: "coreografos", name: "Coreógrafos" },
+  ],
+  moda: [
+    { id: "maquilladoras", name: "Maquilladoras" },
+    { id: "styling", name: "Styling" },
+    { id: "modelos", name: "Modelos" },
+    { id: "disenadora_moda", name: "Diseñadora de moda" },
+    { id: "modista", name: "Modista" },
+  ],
+  contenido_digital: [
+    { id: "marketing_digital", name: "Marketing digital" },
+    { id: "blogs", name: "Blogs" },
+    { id: "influencers", name: "Influencers" },
+    { id: "educacion_online", name: "Educación online" },
+    { id: "foodies", name: "Foodies" },
+    { id: "moda_content", name: "Moda" },
+    { id: "arte_content", name: "Arte" },
+    { id: "marca_personal", name: "Marca personal" },
   ],
 };
 
@@ -161,8 +201,8 @@ const eventSubcategories: Record<string, Category[]> = {
 export default function SearchFilters({ onApplyFilters, triggerButton, filterType }: SearchFiltersProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [filters, setFilters] = useState<FilterValues>({
-    category: filterType === 'artists' ? "musicians" : "concerts",
-    subcategory: filterType === 'artists' ? "guitarists" : "rock_concerts",
+    category: filterType === 'artists' ? "audiovisuales" : "concerts",
+    subcategory: filterType === 'artists' ? "fotografia" : "rock_concerts",
     priceRange: [50000, 500000],
     location: "",
     useCurrentLocation: true,
@@ -181,8 +221,8 @@ export default function SearchFilters({ onApplyFilters, triggerButton, filterTyp
   // Reset filters when filterType changes
   useEffect(() => {
     setFilters({
-      category: filterType === 'artists' ? "musicians" : "concerts",
-      subcategory: filterType === 'artists' ? "guitarists" : "rock_concerts",
+      category: filterType === 'artists' ? "audiovisuales" : "concerts",
+      subcategory: filterType === 'artists' ? "fotografia" : "rock_concerts",
       priceRange: [50000, 500000],
       location: "",
       useCurrentLocation: true,
@@ -233,8 +273,8 @@ export default function SearchFilters({ onApplyFilters, triggerButton, filterTyp
 
   const handleClearFilters = () => {
     setFilters({
-      category: filterType === 'artists' ? "musicians" : "concerts",
-      subcategory: filterType === 'artists' ? "guitarists" : "rock_concerts",
+      category: filterType === 'artists' ? "audiovisuales" : "concerts",
+      subcategory: filterType === 'artists' ? "fotografia" : "rock_concerts",
       priceRange: [50000, 500000],
       location: "",
       useCurrentLocation: true,
