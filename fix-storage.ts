@@ -191,43 +191,6 @@ export class DatabaseStorage implements IStorage {
   
   async getRecommendedArtists(lat?: number, lng?: number): Promise<any[]> {
     try {
-      // Return some mock data for now
-      return [
-        {
-          id: 1,
-          name: "Laura Restrepo",
-          role: "Fotógrafa",
-          minPrice: 200000,
-          photoURL: "https://randomuser.me/api/portraits/women/22.jpg",
-          rating: 4.8
-        },
-        {
-          id: 2,
-          name: "Carlos Ruiz",
-          role: "Músico",
-          minPrice: 150000,
-          photoURL: "https://randomuser.me/api/portraits/men/32.jpg",
-          rating: 4.9
-        },
-        {
-          id: 3,
-          name: "María Jiménez",
-          role: "Pintora",
-          minPrice: 300000,
-          photoURL: "https://randomuser.me/api/portraits/women/45.jpg",
-          rating: 4.7
-        },
-        {
-          id: 4,
-          name: "Santiago López",
-          role: "Diseñador gráfico",
-          minPrice: 180000,
-          photoURL: "https://randomuser.me/api/portraits/men/67.jpg",
-          rating: 4.5
-        }
-      ];
-      
-      /* Original implementation - commented out for now
       // Get all artists
       const artistsList = await db.select().from(artists);
       
@@ -250,7 +213,7 @@ export class DatabaseStorage implements IStorage {
         const user = usersMap.get(artist.userId);
         
         // Calculate distance if coordinates are provided
-        let distance = 0;
+        let distance = null;
         if (lat && lng && user?.latitude && user?.longitude) {
           distance = this.calculateDistance(lat, lng, user.latitude, user.longitude);
         }
@@ -278,10 +241,9 @@ export class DatabaseStorage implements IStorage {
       
       // Return top 10 recommended artists
       return combinedArtists.slice(0, 10);
-      */
     } catch (error) {
       console.error("Error getting recommended artists:", error);
-      return []; // Return empty array on error instead of throwing
+      throw error;
     }
   }
   

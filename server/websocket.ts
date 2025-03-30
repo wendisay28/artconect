@@ -1,6 +1,6 @@
-import { WebSocket, WebSocketServer } from 'ws';
+import { WebSocketServer, WebSocket } from 'ws';
 import { Server } from 'http';
-import { FirebaseStorage } from './storage';
+import { storage } from './storage';
 
 interface ChatMessage {
   type: 'chat_message';
@@ -29,15 +29,19 @@ interface ErrorMessage {
 
 type WebSocketMessage = ChatMessage | UserStatusUpdate | ErrorMessage;
 
-export function setupWebSocketServer(httpServer: Server, storage: FirebaseStorage) {
+const clients = new Map<string, WebSocket>();
+const userSockets = new Map<number, string[]>();
+
+export function setupWebSocketServer(httpServer: Server) {
   const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
   
-  // Map to store user connections
-  const userConnections = new Map<number, Set<WebSocket>>();
+  console.log('WebSocket server initialized on path: /ws');
   
   wss.on('connection', (ws: WebSocket) => {
-    console.log('WebSocket connection established');
-    let userId: number | null = null;
+    const clientId = Math.random().toString(36).substring(2, 15);
+    clients.set(clientId, ws);
+    
+    console.log(`WebSocket client connected: ${clientId}`);
     
     ws.on('message', async (message: string) => {
       try {
@@ -45,14 +49,11 @@ export function setupWebSocketServer(httpServer: Server, storage: FirebaseStorag
         
         switch (data.type) {
           case 'chat_message':
-            await handleChatMessage(data, ws);
+            await handleChatMessage(data, clientId);
             break;
-            
           case 'user_status':
-            userId = data.payload.userId;
-            handleUserStatus(data, ws);
+            handleUserStatus(data, clientId);
             break;
-            
           default:
             ws.send(JSON.stringify({
               type: 'error',
@@ -60,40 +61,43 @@ export function setupWebSocketServer(httpServer: Server, storage: FirebaseStorag
             }));
         }
       } catch (error) {
-        console.error('Error processing WebSocket message:', error);
+        console.error('Error processing message:', error);
         ws.send(JSON.stringify({
           type: 'error',
-          payload: { message: 'Invalid message format' }
+          payload: { message: 'Failed to process message' }
         }));
       }
     });
     
     ws.on('close', () => {
-      console.log('WebSocket connection closed');
-      if (userId) {
-        // Remove this connection from the user's connections
-        const connections = userConnections.get(userId);
-        if (connections) {
-          connections.delete(ws);
-          if (connections.size === 0) {
-            userConnections.delete(userId);
-            
-            // Broadcast offline status
+      // Clean up when client disconnects
+      clients.delete(clientId);
+      
+      // Find and remove client from userSockets
+      for (const [userId, socketIds] of userSockets.entries()) {
+        const index = socketIds.indexOf(clientId);
+        if (index !== -1) {
+          socketIds.splice(index, 1);
+          if (socketIds.length === 0) {
+            userSockets.delete(userId);
             broadcastUserStatus(userId, 'offline');
           }
         }
       }
+      
+      console.log(`WebSocket client disconnected: ${clientId}`);
     });
     
-    // Handle errors
-    ws.on('error', (error) => {
-      console.error('WebSocket error:', error);
-    });
+    // Send initial connection confirmation
+    ws.send(JSON.stringify({
+      type: 'connection_established',
+      payload: { clientId }
+    }));
   });
   
-  async function handleChatMessage(data: ChatMessage, ws: WebSocket) {
+  async function handleChatMessage(data: ChatMessage, senderId: string) {
     try {
-      // Store message in database
+      // Save message to database
       const newMessage = await storage.createMessage({
         chatId: data.payload.chatId,
         senderId: data.payload.senderId,
@@ -101,81 +105,81 @@ export function setupWebSocketServer(httpServer: Server, storage: FirebaseStorag
         read: false
       });
       
-      // Get chat details to find recipient
+      // Get the chat to find the other user
       const chat = await storage.getChat(data.payload.chatId);
-      if (!chat) {
-        throw new Error('Chat not found');
-      }
+      if (!chat) return;
       
-      // Find recipient's user ID
-      const recipientId = 
-        chat.user1Id === data.payload.senderId ? chat.user2Id : chat.user1Id;
+      const otherUserId = chat.user1Id === data.payload.senderId ? chat.user2Id : chat.user1Id;
       
-      // Send message to all connections of the recipient
-      const recipientConnections = userConnections.get(recipientId);
-      if (recipientConnections) {
-        recipientConnections.forEach((connection) => {
-          if (connection.readyState === WebSocket.OPEN) {
-            connection.send(JSON.stringify({
-              type: 'chat_message',
-              payload: {
-                id: newMessage.id,
-                chatId: newMessage.chatId,
-                senderId: newMessage.senderId,
-                content: newMessage.content,
-                createdAt: newMessage.createdAt,
-                read: newMessage.read
-              }
-            }));
-          }
-        });
-      }
+      // Send to all connected clients of the other user
+      const otherUserSockets = userSockets.get(otherUserId) || [];
       
-      // Send confirmation to sender
-      ws.send(JSON.stringify({
-        type: 'message_sent',
-        payload: {
-          id: newMessage.id,
-          chatId: newMessage.chatId,
-          timestamp: new Date().toISOString()
+      otherUserSockets.forEach(socketId => {
+        const client = clients.get(socketId);
+        if (client && client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify({
+            type: 'new_message',
+            payload: {
+              message: newMessage,
+              chatId: data.payload.chatId
+            }
+          }));
         }
-      }));
+      });
     } catch (error) {
       console.error('Error handling chat message:', error);
-      ws.send(JSON.stringify({
-        type: 'error',
-        payload: { message: 'Failed to send message' }
-      }));
     }
   }
   
-  function handleUserStatus(data: UserStatusUpdate, ws: WebSocket) {
-    const userId = data.payload.userId;
-    const status = data.payload.status;
+  function handleUserStatus(data: UserStatusUpdate, clientId: string) {
+    const { userId, status } = data.payload;
     
-    // Add this connection to the user's connections
-    if (!userConnections.has(userId)) {
-      userConnections.set(userId, new Set());
+    if (status === 'online') {
+      // Add this socket to the user's list
+      const userSocketList = userSockets.get(userId) || [];
+      if (!userSocketList.includes(clientId)) {
+        userSocketList.push(clientId);
+        userSockets.set(userId, userSocketList);
+      }
+      
+      // Broadcast user status if this is the first socket
+      if (userSocketList.length === 1) {
+        broadcastUserStatus(userId, 'online');
+      }
+    } else {
+      // Remove this socket from the user's list
+      const userSocketList = userSockets.get(userId) || [];
+      const index = userSocketList.indexOf(clientId);
+      
+      if (index !== -1) {
+        userSocketList.splice(index, 1);
+        
+        if (userSocketList.length === 0) {
+          userSockets.delete(userId);
+          broadcastUserStatus(userId, 'offline');
+        } else {
+          userSockets.set(userId, userSocketList);
+        }
+      }
     }
-    userConnections.get(userId)!.add(ws);
-    
-    // Broadcast online status
-    broadcastUserStatus(userId, status);
   }
   
   function broadcastUserStatus(userId: number, status: 'online' | 'offline') {
-    // Broadcast status to all connected clients
-    wss.clients.forEach((client) => {
+    // Get all users who might be interested in this status update
+    // For simplicity, we'll broadcast to all connected clients
+    // In a real app, you'd only send to users who have chats with this user
+    
+    for (const client of clients.values()) {
       if (client.readyState === WebSocket.OPEN) {
         client.send(JSON.stringify({
-          type: 'user_status',
+          type: 'user_status_update',
           payload: {
             userId,
             status
           }
         }));
       }
-    });
+    }
   }
   
   return wss;

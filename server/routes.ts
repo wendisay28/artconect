@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
-import { WebSocketServer } from "ws";
 import { storage } from "./storage";
+import { setupWebSocketServer } from "./websocket";
 import { z } from "zod";
 import { insertUserSchema, insertArtistSchema, insertEventSchema, insertFavoriteSchema, insertServiceRequestSchema, insertServiceSchema, insertMessageSchema, insertProductSchema } from "@shared/schema";
 
@@ -12,34 +12,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
   
   // Setup WebSocket server for real-time chat
-  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
-  
-  // WebSocket connection handler
-  wss.on('connection', (ws) => {
-    ws.on('message', async (message) => {
-      try {
-        const data = JSON.parse(message.toString());
-        
-        // Handle different message types
-        if (data.type === 'chat_message') {
-          // Store message in database
-          const newMessage = await storage.createMessage(data.payload);
-          
-          // Broadcast to all connected clients
-          wss.clients.forEach(client => {
-            if (client !== ws && client.readyState === ws.OPEN) {
-              client.send(JSON.stringify({
-                type: 'chat_message',
-                payload: newMessage
-              }));
-            }
-          });
-        }
-      } catch (error) {
-        console.error('WebSocket message error:', error);
-      }
-    });
-  });
+  setupWebSocketServer(httpServer);
 
   // API Routes
   
@@ -132,6 +105,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Special artist endpoints must be placed BEFORE the generic :id endpoint
+  app.get('/api/artists/recommended', async (req: Request, res: Response) => {
+    try {
+      const lat = req.query.lat ? parseFloat(req.query.lat as string) : undefined;
+      const lng = req.query.lng ? parseFloat(req.query.lng as string) : undefined;
+      
+      const artists = await storage.getRecommendedArtists(lat, lng);
+      res.json(artists);
+    } catch (error) {
+      console.error('Error fetching recommended artists:', error);
+      res.status(500).json({ message: 'Error fetching recommended artists' });
+    }
+  });
+  
+  app.get('/api/artists/explore', async (req: Request, res: Response) => {
+    try {
+      const lat = req.query.lat ? parseFloat(req.query.lat as string) : undefined;
+      const lng = req.query.lng ? parseFloat(req.query.lng as string) : undefined;
+      
+      const artists = await storage.getArtistsForExplorer(lat, lng);
+      res.json(artists);
+    } catch (error) {
+      console.error('Error fetching artists for explorer:', error);
+      res.status(500).json({ message: 'Error fetching artists for explorer' });
+    }
+  });
+  
+  // This generic route should be AFTER specific paths to avoid capturing them
   app.get('/api/artists/:id', async (req: Request, res: Response) => {
     try {
       // Handle NaN case to avoid DB errors
@@ -150,30 +151,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching artist:', error);
       res.status(500).json({ message: 'Error fetching artist' });
-    }
-  });
-  
-  app.get('/api/artists/recommended', async (req: Request, res: Response) => {
-    try {
-      const lat = req.query.lat ? parseFloat(req.query.lat as string) : undefined;
-      const lng = req.query.lng ? parseFloat(req.query.lng as string) : undefined;
-      
-      const artists = await storage.getRecommendedArtists(lat, lng);
-      res.json(artists);
-    } catch (error) {
-      res.status(500).json({ message: 'Error fetching recommended artists' });
-    }
-  });
-  
-  app.get('/api/artists/explore', async (req: Request, res: Response) => {
-    try {
-      const lat = req.query.lat ? parseFloat(req.query.lat as string) : undefined;
-      const lng = req.query.lng ? parseFloat(req.query.lng as string) : undefined;
-      
-      const artists = await storage.getArtistsForExplorer(lat, lng);
-      res.json(artists);
-    } catch (error) {
-      res.status(500).json({ message: 'Error fetching artists for explorer' });
     }
   });
   

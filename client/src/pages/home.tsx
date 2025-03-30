@@ -95,10 +95,10 @@ export default function HomePage() {
         <div className="flex justify-between items-center mb-4">
           <h2 className="font-semibold text-xl">Artistas Recomendados</h2>
           <Link href="/explore">
-            <a className="text-primary text-sm flex items-center">
+            <div className="text-primary text-sm flex items-center cursor-pointer">
               Ver todos
               <ChevronRight className="h-4 w-4 ml-1" />
-            </a>
+            </div>
           </Link>
         </div>
         
@@ -135,10 +135,10 @@ export default function HomePage() {
         <div className="flex justify-between items-center mb-4">
           <h2 className="font-semibold text-xl">Eventos Cercanos</h2>
           <Link href="/search?type=events">
-            <a className="text-primary text-sm flex items-center">
+            <div className="text-primary text-sm flex items-center cursor-pointer">
               Ver todos
               <ChevronRight className="h-4 w-4 ml-1" />
-            </a>
+            </div>
           </Link>
         </div>
         
@@ -179,10 +179,10 @@ export default function HomePage() {
         <div className="flex justify-between items-center mb-4">
           <h2 className="font-semibold text-xl">Blog & Noticias</h2>
           <Link href="/blog">
-            <a className="text-primary text-sm flex items-center">
+            <div className="text-primary text-sm flex items-center cursor-pointer">
               Ver todo
               <ChevronRight className="h-4 w-4 ml-1" />
-            </a>
+            </div>
           </Link>
         </div>
         
@@ -222,9 +222,9 @@ export default function HomePage() {
                     {post.excerpt}
                   </p>
                   <Link href={`/blog/${post.id}`}>
-                    <a className="text-primary text-sm mt-2 inline-block">
+                    <div className="text-primary text-sm mt-2 inline-block cursor-pointer">
                       Leer más
-                    </a>
+                    </div>
                   </Link>
                 </CardContent>
               </Card>
@@ -238,10 +238,10 @@ export default function HomePage() {
         <div className="flex justify-between items-center mb-4">
           <h2 className="font-semibold text-xl">Tienda de Artistas</h2>
           <Link href="/shop">
-            <a className="text-primary text-sm flex items-center">
+            <div className="text-primary text-sm flex items-center cursor-pointer">
               Ver todo
               <ChevronRight className="h-4 w-4 ml-1" />
-            </a>
+            </div>
           </Link>
         </div>
         
