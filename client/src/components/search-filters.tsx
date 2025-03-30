@@ -328,13 +328,35 @@ export default function SearchFilters({ onApplyFilters, triggerButton, filterTyp
           <div>
             <h3 className="font-medium mb-2">Ubicación</h3>
             <div className="relative">
-              <Input
-                placeholder="Ingresa una ubicación"
-                value={filters.location}
-                onChange={(e) => setFilters({ ...filters, location: e.target.value })}
-                disabled={filters.useCurrentLocation}
-                className="mb-2"
-              />
+              {filters.useCurrentLocation ? (
+                <Input
+                  placeholder="Ubicación actual (GPS)"
+                  value="Mi ubicación actual"
+                  disabled={true}
+                  className="mb-2"
+                />
+              ) : (
+                <div className="mb-2">
+                  <select
+                    className="w-full h-10 px-3 py-2 rounded-md border border-input bg-background text-sm"
+                    value={filters.location}
+                    onChange={(e) => setFilters({ ...filters, location: e.target.value })}
+                  >
+                    <option value="">Selecciona una ciudad</option>
+                    <option value="Bogotá">Bogotá</option>
+                    <option value="Medellín">Medellín</option>
+                    <option value="Cali">Cali</option>
+                    <option value="Barranquilla">Barranquilla</option>
+                    <option value="Cartagena">Cartagena</option>
+                    <option value="Santa Marta">Santa Marta</option>
+                    <option value="Bucaramanga">Bucaramanga</option>
+                    <option value="Pereira">Pereira</option>
+                    <option value="Manizales">Manizales</option>
+                    <option value="Armenia">Armenia</option>
+                    <option value="Villavicencio">Villavicencio</option>
+                  </select>
+                </div>
+              )}
             </div>
             <div className="flex items-center space-x-2 mb-2">
               <Checkbox 
@@ -347,7 +369,7 @@ export default function SearchFilters({ onApplyFilters, triggerButton, filterTyp
               <Label htmlFor="useCurrentLocation">Usar mi ubicación actual</Label>
             </div>
             <div>
-              <Label className="text-sm">Mostrar artistas en un radio de {filters.distance} km</Label>
+              <Label className="text-sm">Mostrar {filterType === 'artists' ? 'artistas' : 'eventos'} en un radio de {filters.distance} km</Label>
               <Slider
                 value={[filters.distance]}
                 min={5}
