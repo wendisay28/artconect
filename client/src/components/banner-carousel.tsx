@@ -60,17 +60,15 @@ export default function BannerCarousel({
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-4">
             <h3 className="font-bold text-white text-xl">{item.title}</h3>
             <p className="text-white opacity-90">{item.subtitle}</p>
-            <Link href={`/event/${item.id}`}>
-              <a>
-                <Button 
-                  variant="default" 
-                  size="sm"
-                  className="mt-2 w-max"
-                >
-                  <Calendar className="mr-1 h-4 w-4" />
-                  Ver detalles
-                </Button>
-              </a>
+            <Link href={`/event/${item.id}`} className="block">
+              <Button 
+                variant="default" 
+                size="sm"
+                className="mt-2 w-max"
+              >
+                <Calendar className="mr-1 h-4 w-4" />
+                Ver detalles
+              </Button>
             </Link>
           </div>
         </div>

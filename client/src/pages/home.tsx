@@ -12,31 +12,76 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { ChevronRight, Search, Bell, BookmarkCheck, Share2 } from "lucide-react";
 
+// Definición de tipos para los datos de API
+interface Event {
+  id: number;
+  name: string;
+  description?: string;
+  date: string;
+  location: string;
+  price: number;
+  isFree: boolean;
+  eventType: string;
+  image?: string;
+}
+
+interface Artist {
+  id: number;
+  name: string;
+  role: string;
+  minPrice: number;
+  photoURL?: string;
+}
+
+interface BlogPost {
+  id: string;
+  title: string;
+  excerpt: string;
+  imageUrl?: string;
+  date: string;
+}
+
+interface Product {
+  id: number;
+  name: string;
+  price: number;
+  image?: string;
+  artistName: string;
+}
+
+// Importar la interfaz BannerItem
+interface BannerItem {
+  id: string;
+  imageUrl: string;
+  title: string;
+  subtitle: string;
+}
+
 export default function HomePage() {
   const { locationData } = useLocation();
   const { toast } = useToast();
   
-  const { data: featuredEvents, isLoading: isLoadingEvents } = useQuery({
+  const { data: featuredEvents, isLoading: isLoadingEvents } = useQuery<Event[]>({
     queryKey: ['/api/events/featured'],
     throwOnError: false,
   });
   
-  const { data: recommendedArtists, isLoading: isLoadingArtists } = useQuery({
+  const { data: recommendedArtists, isLoading: isLoadingArtists } = useQuery<Artist[]>({
     queryKey: ['/api/artists/recommended', locationData?.coordinates?.latitude, locationData?.coordinates?.longitude],
     throwOnError: false,
   });
   
-  const { data: nearbyEvents, isLoading: isLoadingNearbyEvents } = useQuery({
+  const { data: nearbyEvents, isLoading: isLoadingNearbyEvents } = useQuery<Event[]>({
     queryKey: ['/api/events/nearby', locationData?.coordinates?.latitude, locationData?.coordinates?.longitude],
     throwOnError: false,
   });
   
-  const { data: blogPosts, isLoading: isLoadingBlogPosts } = useQuery({
+  const { data: blogPosts, isLoading: isLoadingBlogPosts } = useQuery<BlogPost[]>({
     queryKey: ['/api/blog/posts'],
     throwOnError: false,
   });
   
-  const { data: products, isLoading: isLoadingProducts } = useQuery({
+  const { data: products, isLoading: isLoadingProducts } = useQuery<Product[]>({
     queryKey: ['/api/products'],
     throwOnError: false,
   });
@@ -55,6 +100,13 @@ export default function HomePage() {
       description: "Funcionalidad de compartir en desarrollo",
     });
   };
+
+  // Inicializar los arrays para evitar errores de undefined
+  const safeEvents = featuredEvents || [];
+  const safeArtists = recommendedArtists || [];
+  const safeNearbyEvents = nearbyEvents || [];
+  const safeBlogPosts = blogPosts || [];
+  const safeProducts = products || [];
 
   return (
     <div className="container mx-auto px-4 py-6">
@@ -80,12 +132,12 @@ export default function HomePage() {
           <Skeleton className="h-44 w-full rounded-xl" />
         ) : (
           <BannerCarousel 
-            items={featuredEvents?.map(event => ({
-              id: event.id,
-              imageUrl: event.image,
+            items={safeEvents.map(event => ({
+              id: String(event.id),
+              imageUrl: event.image || '',
               title: event.name,
-              subtitle: event.description.slice(0, 60) + (event.description.length > 60 ? '...' : '')
-            })) || []}
+              subtitle: event.description ? event.description.slice(0, 60) + (event.description.length > 60 ? '...' : '') : ''
+            }))}
           />
         )}
       </section>
@@ -94,11 +146,11 @@ export default function HomePage() {
       <section className="mb-8">
         <div className="flex justify-between items-center mb-4">
           <h2 className="font-semibold text-xl">Artistas Recomendados</h2>
-          <Link href="/explore">
-            <div className="text-primary text-sm flex items-center cursor-pointer">
+          <Link href="/explore" className="block">
+            <span className="text-primary text-sm flex items-center cursor-pointer">
               Ver todos
               <ChevronRight className="h-4 w-4 ml-1" />
-            </div>
+            </span>
           </Link>
         </div>
         
@@ -113,15 +165,15 @@ export default function HomePage() {
                 </div>
               ))
             ) : (
-              recommendedArtists?.map(artist => (
+              safeArtists.map(artist => (
                 <div key={artist.id} className="flex-shrink-0 w-40">
                   <ArtistCard
-                    id={artist.id}
+                    id={String(artist.id)}
                     name={artist.name}
                     role={artist.role}
                     price={artist.minPrice}
                     priceUnit="hora"
-                    imageUrl={artist.photoURL}
+                    imageUrl={artist.photoURL || ''}
                   />
                 </div>
               ))
@@ -134,11 +186,11 @@ export default function HomePage() {
       <section className="mb-8">
         <div className="flex justify-between items-center mb-4">
           <h2 className="font-semibold text-xl">Eventos Cercanos</h2>
-          <Link href="/search?type=events">
-            <div className="text-primary text-sm flex items-center cursor-pointer">
+          <Link href="/search?type=events" className="block">
+            <span className="text-primary text-sm flex items-center cursor-pointer">
               Ver todos
               <ChevronRight className="h-4 w-4 ml-1" />
-            </div>
+            </span>
           </Link>
         </div>
         
@@ -147,7 +199,7 @@ export default function HomePage() {
             Array(2).fill(0).map((_, i) => (
               <Skeleton key={i} className="h-32 w-full rounded-lg" />
             ))
-          ) : nearbyEvents?.length === 0 ? (
+          ) : safeNearbyEvents.length === 0 ? (
             <Card>
               <CardContent className="py-4 text-center">
                 <p className="text-muted-foreground">No hay eventos cercanos disponibles</p>
@@ -155,15 +207,15 @@ export default function HomePage() {
               </CardContent>
             </Card>
           ) : (
-            nearbyEvents?.map(event => (
+            safeNearbyEvents.map(event => (
               <EventCard
                 key={event.id}
-                id={event.id}
+                id={String(event.id)}
                 name={event.name}
                 date={new Date(event.date)}
                 location={event.location}
                 price={event.price}
-                imageUrl={event.image}
+                imageUrl={event.image || ''}
                 isFree={event.isFree}
                 isVirtual={event.eventType === 'virtual'}
                 onSave={handleSaveEvent}
@@ -178,11 +230,11 @@ export default function HomePage() {
       <section className="mb-8">
         <div className="flex justify-between items-center mb-4">
           <h2 className="font-semibold text-xl">Blog & Noticias</h2>
-          <Link href="/blog">
-            <div className="text-primary text-sm flex items-center cursor-pointer">
+          <Link href="/blog" className="block">
+            <span className="text-primary text-sm flex items-center cursor-pointer">
               Ver todo
               <ChevronRight className="h-4 w-4 ml-1" />
-            </div>
+            </span>
           </Link>
         </div>
         
@@ -200,7 +252,7 @@ export default function HomePage() {
               </Card>
             ))
           ) : (
-            blogPosts?.map(post => (
+            safeBlogPosts.map(post => (
               <Card key={post.id} className="overflow-hidden">
                 <div className="relative h-40">
                   <img 
@@ -221,10 +273,10 @@ export default function HomePage() {
                   <p className="text-muted-foreground text-sm mt-1 line-clamp-2">
                     {post.excerpt}
                   </p>
-                  <Link href={`/blog/${post.id}`}>
-                    <div className="text-primary text-sm mt-2 inline-block cursor-pointer">
+                  <Link href={`/blog/${post.id}`} className="block">
+                    <span className="text-primary text-sm mt-2 inline-block cursor-pointer">
                       Leer más
-                    </div>
+                    </span>
                   </Link>
                 </CardContent>
               </Card>
@@ -237,11 +289,11 @@ export default function HomePage() {
       <section>
         <div className="flex justify-between items-center mb-4">
           <h2 className="font-semibold text-xl">Tienda de Artistas</h2>
-          <Link href="/shop">
-            <div className="text-primary text-sm flex items-center cursor-pointer">
+          <Link href="/shop" className="block">
+            <span className="text-primary text-sm flex items-center cursor-pointer">
               Ver todo
               <ChevronRight className="h-4 w-4 ml-1" />
-            </div>
+            </span>
           </Link>
         </div>
         
@@ -256,7 +308,7 @@ export default function HomePage() {
               </div>
             ))
           ) : (
-            products?.map(product => (
+            safeProducts.map(product => (
               <Card key={product.id} className="overflow-hidden">
                 <div className="relative pb-[100%]">
                   <img 
