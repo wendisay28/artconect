@@ -68,7 +68,7 @@ export default function RealTimeOffersPage() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("my-requests");
   const [newRequestDialogOpen, setNewRequestDialogOpen] = useState(false);
-  
+
   // Datos de categorías y subcategorías
   const categorias = {
     "Artes Musicales": ["Músicos", "Cantantes", "Compositores", "Directores"],
@@ -82,7 +82,7 @@ export default function RealTimeOffersPage() {
     "Tecnología Creativa": ["Desarrolladores de Apps", "Diseñadores UX/UI", "Animadores 3D"],
     "Servicios para Eventos": ["Organizadores", "Decoradores", "DJs", "Presentadores", "Fotógrafos de Eventos"]
   };
-  
+
   // Form state
   const [formData, setFormData] = useState({
     title: "",
@@ -97,7 +97,7 @@ export default function RealTimeOffersPage() {
     date: "",
     time: ""
   });
-  
+
   const [newTag, setNewTag] = useState("");
 
   // Consulta para obtener las solicitudes del usuario
@@ -105,7 +105,7 @@ export default function RealTimeOffersPage() {
     queryKey: ['/api/service-requests', user?.uid],
     queryFn: async () => {
       if (!user) return [];
-      
+
       try {
         const response = await fetch(`/api/service-requests?userId=${user.uid}`);
         if (!response.ok) {
@@ -185,7 +185,8 @@ export default function RealTimeOffersPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmitRequest = async () => {
+  const handleSubmitRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
     // Validar formulario
     if (!formData.title || !formData.description || !formData.categoryId || !formData.price || !formData.date) {
       toast({
@@ -197,7 +198,7 @@ export default function RealTimeOffersPage() {
     }
 
     // Si el usuario no está autenticado
-    if (!user) {
+    if (!user || !user.id) { // Added user.id check
       toast({
         variant: "destructive",
         title: "Inicio de sesión requerido",
@@ -208,30 +209,36 @@ export default function RealTimeOffersPage() {
 
     try {
       setIsSubmitting(true);
-      
-      // Construir el objeto de solicitud
+
+      // Construir el objeto de solicitud  with corrections
       const requestData = {
-        ...formData,
-        price: parseFloat(formData.price),
-        userId: user.uid,
+        clientId: user.id,
+        category: formData.categoryId,
+        subcategory: formData.subcategoryId,
+        title: formData.title,
+        description: formData.description,
+        budget: parseFloat(formData.price),
+        date: new Date(formData.date), // Corrected date type
+        time: formData.time,
+        location: formData.useCurrentLocation ? locationData?.address : formData.location,
         latitude: locationData?.coordinates?.latitude || null,
         longitude: locationData?.coordinates?.longitude || null,
         status: 'active',
         createdAt: new Date().toISOString()
       };
-      
+
       // Enviar la solicitud al backend
       const response = await apiRequest("POST", "/api/service-requests", requestData);
-      
+
       if (response.ok) {
         // Invalidar consultas para refrescar los datos
         queryClient.invalidateQueries({ queryKey: ['/api/service-requests'] });
-        
+
         toast({
           title: "Solicitud creada",
           description: "Tu solicitud ha sido publicada con éxito",
         });
-        
+
         // Cerrar el diálogo y limpiar el formulario
         setNewRequestDialogOpen(false);
         setFormData({
@@ -246,6 +253,14 @@ export default function RealTimeOffersPage() {
           useCurrentLocation: true,
           date: "",
           time: ""
+        });
+      } else {
+        const errorData = await response.json();
+        console.error("Error al crear solicitud:", errorData);
+        toast({
+          variant: "destructive",
+          title: "Error al crear solicitud",
+          description: errorData.message || "Ha ocurrido un error. Por favor, intenta de nuevo más tarde.",
         });
       }
     } catch (error) {
@@ -274,17 +289,17 @@ export default function RealTimeOffersPage() {
 
     try {
       setIsProcessingResponse(responseId);
-      
+
       // Enviar la acción al backend
       const response = await apiRequest("PATCH", `/api/service-requests/${requestId}/responses/${responseId}`, {
         status: 'accepted',
         userId: user.uid
       });
-      
+
       if (response.ok) {
         // Invalidar consultas para refrescar los datos
         queryClient.invalidateQueries({ queryKey: ['/api/service-requests'] });
-        
+
         toast({
           title: "Oferta aceptada",
           description: "Has aceptado la oferta del artista. Pronto recibirás más detalles.",
@@ -314,17 +329,17 @@ export default function RealTimeOffersPage() {
 
     try {
       setIsProcessingResponse(responseId);
-      
+
       // Enviar la acción al backend
       const response = await apiRequest("PATCH", `/api/service-requests/${requestId}/responses/${responseId}`, {
         status: 'rejected',
         userId: user.uid
       });
-      
+
       if (response.ok) {
         // Invalidar consultas para refrescar los datos
         queryClient.invalidateQueries({ queryKey: ['/api/service-requests'] });
-        
+
         toast({
           title: "Oferta rechazada",
           description: "Has rechazado la oferta del artista",
@@ -524,7 +539,7 @@ export default function RealTimeOffersPage() {
                         Ejemplos: Cantante Pop, Pianista, Fotógrafo de Bodas, Cocinero Vegano
                       </p>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label htmlFor="price">Presupuesto (COP)</Label>
                       <div className="grid grid-cols-4 gap-2">
