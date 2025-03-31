@@ -98,7 +98,7 @@ export default function ExplorerPage() {
           title: "Error",
           description: "No se pudo añadir a favoritos",
         });
-      }b}`] });
+      }
 
       toast({
         title: `${activeTab === "artists" ? "Artista" : "Evento"} guardado`,
