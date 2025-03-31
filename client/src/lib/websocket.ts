@@ -46,7 +46,10 @@ export function useWebSocket() {
 
     setStatus('connecting');
 
-    const wsUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws`;
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = window.location.hostname;
+    const wsUrl = `${protocol}//${host}:5000/ws`;
+    
     console.log('Connecting to WebSocket URL:', wsUrl);
 
     try {

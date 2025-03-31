@@ -64,44 +64,31 @@ export default function ExplorerPage() {
     try {
       setLoadingLike(true);
 
-      // Creamos el objeto de favorito según el tipo
+      const favoriteData = {
+        type: activeTab === "artists" ? "artist" : "event",
+        itemId: typeof id === 'string' ? parseInt(id, 10) : id,
+      };
+
+      await apiRequest("POST", "/api/favorites", favoriteData);
+
+      queryClient.invalidateQueries({ queryKey: [`/api/favorites/${activeTab}`] });
+
+      toast({
+        title: "Guardado exitosamente",
+        description: `${activeTab === "artists" ? "Artista" : "Evento"} añadido a favoritos`,
+      });
+
+      goToNextItem();
     } catch (error) {
       console.error('Error al dar like:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "No se pudo guardar en favoritos"
+        description: "No se pudo guardar en favoritos. Inténtalo de nuevo."
       });
     } finally {
       setLoadingLike(false);
     }
-      const favoriteData = {
-        type: "artists", // Siempre es "artists" para artistas
-        itemId: parseInt(id), // Convertir a número
-      };
-
-      try {
-        // Hacemos la petición para guardar en favoritos
-        await apiRequest("POST", "/api/favorites", favoriteData);
-        
-        // Refrescamos la caché de favoritos
-        queryClient.invalidateQueries({ queryKey: [`/api/favorites/${activeTab}`] });
-        
-        toast({
-          title: `${activeTab === "artists" ? "Artista" : "Evento"} guardado`,
-          description: "Se ha añadido a tus favoritos",
-        });
-      } catch (error) {
-        console.error("Error al guardar en favoritos:", error);
-        toast({
-          variant: "destructive",
-          title: "Error al guardar",
-          description: "No se pudo añadir a favoritos, inténtalo de nuevo",
-        });
-      } finally {
-        setLoadingLike(false);
-        goToNextItem();
-      }
   };
 
   const handleDislike = (id: string) => {
