@@ -16,6 +16,7 @@ import ProfilePage from "@/pages/profile";
 import SearchPage from "@/pages/search";
 import GeoRecommendationsPage from "@/pages/geo-recommendations";
 import NotFound from "@/pages/not-found";
+import RealTimeOffersPage from "@/pages/real-time-offers";
 import BottomNavigation from "./components/bottom-navigation";
 import LocationModal from "./components/location-modal";
 import SettingsMenu from "./components/settings-menu";
@@ -49,6 +50,7 @@ function Router() {
           <Route path="/profile" component={ProfilePage} />
           <Route path="/search" component={SearchPage} />
           <Route path="/nearby" component={GeoRecommendationsPage} />
+          <Route path="/real-time-offers" component={RealTimeOffersPage} />
           <Route component={NotFound} />
         </Switch>
       </main>
