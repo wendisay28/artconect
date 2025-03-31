@@ -328,8 +328,23 @@ const decodedToken = { uid: token };
   
   app.post('/api/favorites', async (req: Request, res: Response) => {
     try {
-      const favoriteData = insertFavoriteSchema.parse(req.body);
-      const newFavorite = await storage.createFavorite(favoriteData);
+      const token = req.headers.authorization?.split('Bearer ')[1];
+      if (!token) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
+      const user = await storage.getUserByFirebaseUid(token);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      const favoriteData = {
+        ...req.body,
+        userId: user.id
+      };
+
+      const parsedData = insertFavoriteSchema.parse(favoriteData);
+      const newFavorite = await storage.createFavorite(parsedData);
       res.status(201).json(newFavorite);
     } catch (error) {
       if (error instanceof z.ZodError) {

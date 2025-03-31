@@ -62,14 +62,10 @@ export default function ExplorerPage() {
     try {
       setLoadingLike(true);
 
-      // Obtener el ID numérico del usuario
-      const userProfile = await apiRequest("GET", "/api/users/profile");
-
-      // Creamos el objeto de favorito según el tipo (artista o evento)
+      // Creamos el objeto de favorito según el tipo
       const favoriteData = {
-        userId: userProfile.id, // Usando el ID numérico del usuario
-        type: activeTab, // "artists" o "events"
-        itemId: id,
+        type: "artists", // Siempre es "artists" para artistas
+        itemId: parseInt(id), // Convertir a número
       };
 
       // Hacemos la petición para guardar en favoritos
