@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { apiRequest } from '@/lib/queryClient';
 
+const [, setLocation] = useLocation();
+
 const categories = {
   "Música": ["Cantante", "Banda", "DJ", "Músico"],
   "Arte Visual": ["Pintor", "Fotógrafo", "Ilustrador"],
@@ -18,7 +20,7 @@ const categories = {
 };
 
 export default function CreateArtistProfile() {
-  const navigate = useNavigate();
+  // Navegación manejada por setLocation de wouter
   const [formData, setFormData] = useState({
     category: '',
     subcategory: '',
@@ -36,7 +38,7 @@ export default function CreateArtistProfile() {
         minPrice: parseInt(formData.minPrice),
         maxPrice: parseInt(formData.maxPrice)
       });
-      navigate('/profile');
+      setLocation('/profile');
     } catch (error) {
       console.error('Error creating artist profile:', error);
     }
