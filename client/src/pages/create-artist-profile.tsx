@@ -9,8 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { apiRequest } from '@/lib/queryClient';
 
-const [, setLocation] = useLocation();
-
 const categories = {
   "Música": ["Cantante", "Banda", "DJ", "Músico"],
   "Arte Visual": ["Pintor", "Fotógrafo", "Ilustrador"],
@@ -20,7 +18,7 @@ const categories = {
 };
 
 export default function CreateArtistProfile() {
-  // Navegación manejada por setLocation de wouter
+  const [, setLocation] = useLocation();
   const [formData, setFormData] = useState({
     category: '',
     subcategory: '',
