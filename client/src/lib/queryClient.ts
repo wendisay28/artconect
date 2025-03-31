@@ -12,9 +12,23 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
+  const headers: Record<string, string> = {
+    ...(data && { "Content-Type": "application/json" }),
+  };
+
+  // Obtener el token del usuario autenticado
+  const auth = await import('firebase/auth');
+  const { getAuth } = auth;
+  const currentUser = getAuth().currentUser;
+  
+  if (currentUser) {
+    const token = await currentUser.getIdToken();
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers,
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });
