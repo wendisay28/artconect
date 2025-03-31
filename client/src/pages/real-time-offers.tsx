@@ -107,11 +107,8 @@ export default function RealTimeOffersPage() {
       if (!user) return [];
 
       try {
-        const response = await fetch(`/api/service-requests?userId=${user.uid}`);
-        if (!response.ok) {
-          throw new Error('Error al cargar solicitudes');
-        }
-        return await response.json();
+        const response = await apiRequest('GET', '/api/service-requests');
+        return response.data || [];
       } catch (error) {
         console.error('Error fetching service requests:', error);
         throw error;
