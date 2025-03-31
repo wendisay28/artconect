@@ -65,6 +65,16 @@ export default function ExplorerPage() {
       setLoadingLike(true);
 
       // Creamos el objeto de favorito según el tipo
+    } catch (error) {
+      console.error('Error al dar like:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo guardar en favoritos"
+      });
+    } finally {
+      setLoadingLike(false);
+    }
       const favoriteData = {
         type: "artists", // Siempre es "artists" para artistas
         itemId: parseInt(id), // Convertir a número
