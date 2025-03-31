@@ -16,15 +16,24 @@ export async function apiRequest(
     ...(data && { "Content-Type": "application/json" }),
   };
 
-  // Obtener el token del usuario autenticado
+  // Obtener el token del usuario autenticado with error handling for token refresh
   const auth = await import('firebase/auth');
-  const { getAuth } = auth;
+  const { getAuth, onAuthStateChanged } = auth;
   const currentUser = getAuth().currentUser;
-  
+  let token: string | null = null;
+
   if (currentUser) {
-    const token = await currentUser.getIdToken();
-    headers['Authorization'] = `Bearer ${token}`;
+    try {
+      token = await currentUser.getIdToken(true); // true for force refresh
+      headers['Authorization'] = `Bearer ${token}`;
+    } catch (error) {
+      console.error("Error refreshing token:", error);
+      // Handle token refresh error (e.g., re-authentication, logout)
+      // For simplicity, logging the error for now.  A more robust solution would be needed in production
+    }
+
   }
+
 
   const res = await fetch(url, {
     method,
@@ -58,7 +67,7 @@ export const getQueryFn: <T>(options: {
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      queryFn: getQueryFn({ on401: "returnNull" }), // Cambiado a returnNull para evitar errores
+      queryFn: getQueryFn({ on401: "returnNull" }), 
       refetchInterval: false,
       refetchOnWindowFocus: false,
       staleTime: Infinity,
