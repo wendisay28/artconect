@@ -46,9 +46,8 @@ export function useWebSocket() {
 
     setStatus('connecting');
 
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = window.location.hostname;
-    const wsUrl = `${protocol}//${host}:5000/ws`;
+    const wsUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws`;
+    console.log('Connecting to WebSocket URL:', wsUrl);
 
     try {
       socket.current = new WebSocket(wsUrl);
@@ -59,7 +58,7 @@ export function useWebSocket() {
       };
 
       socket.current.onclose = () => {
-        console.log('WebSocket closed');
+        console.log('WebSocket disconnected');
         setStatus('closed');
       };
 
@@ -69,10 +68,13 @@ export function useWebSocket() {
       };
 
       socket.current.onmessage = (event) => {
-        const message = JSON.parse(event.data);
-        setMessages(prev => [...prev, message]);
+        try {
+          const message = JSON.parse(event.data);
+          setMessages(prev => [...prev, message]);
+        } catch (error) {
+          console.error('Error parsing WebSocket message:', error);
+        }
       };
-
     } catch (error) {
       console.error('Error creating WebSocket:', error);
       setStatus('error');
@@ -86,49 +88,26 @@ export function useWebSocket() {
     }
   }, []);
 
-  const sendMessage = useCallback((message: WebSocketMessage) => {
+  const send = useCallback((message: WebSocketMessage) => {
     if (socket.current?.readyState === WebSocket.OPEN) {
       socket.current.send(JSON.stringify(message));
+    } else {
+      console.error('WebSocket is not connected');
     }
   }, []);
 
-  const clearMessages = useCallback(() => {
-    setMessages([]);
-  }, []);
-
-  const sendChatMessage = useCallback((chatId: number, content: string, senderId: number) => {
-    sendMessage({
-      type: 'chat_message',
-      payload: {
-        chatId,
-        senderId,
-        content,
-        timestamp: Date.now()
-      }
-    });
-  }, [sendMessage]);
-
-  const updateUserStatus = useCallback((userId: number, status: 'online' | 'offline') => {
-    sendMessage({
-      type: 'user_status',
-      payload: { userId, status }
-    });
-  }, [sendMessage]);
-
   useEffect(() => {
-    connect();
-    return () => disconnect();
-  }, [connect, disconnect]);
+    return () => {
+      disconnect();
+    };
+  }, [disconnect]);
 
   return {
     status,
     messages,
-    sendMessage,
-    sendChatMessage,
-    updateUserStatus,
     connect,
     disconnect,
-    clearMessages
+    send
   };
 }
 
