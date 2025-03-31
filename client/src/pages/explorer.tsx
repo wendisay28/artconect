@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "@/context/location-context";
+import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import SearchFilters from "@/components/search-filters";
 import SwipeableCard from "@/components/swipeable-card";
 import { Button } from "@/components/ui/button";
@@ -41,13 +43,53 @@ export default function ExplorerPage() {
     throwOnError: false,
   });
 
-  const handleLike = (id: string) => {
-    // Add to favorites/likes
-    toast({
-      title: `${activeTab === "artists" ? "Artista" : "Evento"} guardado`,
-      description: `Se ha añadido a tus favoritos`,
-    });
-    goToNextItem();
+  // Importamos lo necesario para hacer la petición
+  const [loadingLike, setLoadingLike] = useState(false);
+  const { user } = useAuth();
+
+  const handleLike = async (id: string) => {
+    // Si no hay usuario, mostramos un mensaje y no hacemos nada
+    if (!user) {
+      toast({
+        variant: "destructive",
+        title: "Necesitas iniciar sesión",
+        description: "Para añadir a favoritos, inicia sesión primero",
+      });
+      goToNextItem();
+      return;
+    }
+    
+    try {
+      setLoadingLike(true);
+      
+      // Creamos el objeto de favorito según el tipo (artista o evento)
+      const favoriteData = {
+        userId: user.uid, // Usar el ID del usuario actual
+        type: activeTab, // "artists" o "events"
+        itemId: id,
+      };
+      
+      // Hacemos la petición para guardar en favoritos
+      await apiRequest("POST", "/api/favorites", favoriteData);
+      
+      // Refrescamos la caché de favoritos
+      queryClient.invalidateQueries({ queryKey: [`/api/favorites/${activeTab}`] });
+      
+      toast({
+        title: `${activeTab === "artists" ? "Artista" : "Evento"} guardado`,
+        description: `Se ha añadido a tus favoritos`,
+      });
+    } catch (error) {
+      console.error("Error al guardar en favoritos:", error);
+      toast({
+        variant: "destructive",
+        title: "Error al guardar",
+        description: "No se pudo añadir a favoritos, inténtalo de nuevo",
+      });
+    } finally {
+      setLoadingLike(false);
+      goToNextItem();
+    }
   };
 
   const handleDislike = (id: string) => {

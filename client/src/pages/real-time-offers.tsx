@@ -100,71 +100,92 @@ export default function RealTimeOffersPage() {
   
   const [newTag, setNewTag] = useState("");
 
-  // Mocked data for demonstration
-  const userRequests: RequestOffer[] = [
-    {
-      id: 1,
-      title: "Fotógrafo para cumpleaños",
-      description: "Necesito un fotógrafo para un cumpleaños de 50 personas. El evento durará aproximadamente 4 horas.",
-      categoryId: "audiovisuales",
-      subcategoryId: "fotografia",
-      price: 250000,
-      location: "Bogotá, Colombia",
-      latitude: 4.6097,
-      longitude: -74.0817,
-      date: "2025-04-15",
-      time: "18:00",
-      status: "active",
-      createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
-      responses: [
-        {
-          id: 101,
-          userName: "Carlos Jimenez",
-          userPhoto: "https://randomuser.me/api/portraits/men/32.jpg",
-          price: 300000,
-          description: "Tengo disponibilidad. Ofrezco servicio completo con edición y entrega de todas las fotos en alta calidad.",
-          rating: 4.8,
-          distance: 3.2,
-          timestamp: new Date(Date.now() - 1800000).toISOString(),
-          status: "pending"
-        },
-        {
-          id: 102,
-          userName: "Maria López",
-          userPhoto: "https://randomuser.me/api/portraits/women/44.jpg",
-          price: 270000,
-          description: "Disponible para esa fecha. Incluye 100 fotos editadas y entrega en 48h.",
-          rating: 4.9,
-          distance: 5.7,
-          timestamp: new Date(Date.now() - 3600000).toISOString(),
-          status: "pending"
+  // Consulta para obtener las solicitudes del usuario
+  const { data: userRequests = [], isLoading: isLoadingRequests } = useQuery({
+    queryKey: ['/api/service-requests', user?.uid],
+    queryFn: async () => {
+      if (!user) return [];
+      
+      try {
+        const response = await fetch(`/api/service-requests?userId=${user.uid}`);
+        if (!response.ok) {
+          throw new Error('Error al cargar solicitudes');
         }
-      ]
+        return await response.json();
+      } catch (error) {
+        console.error('Error fetching service requests:', error);
+        throw error;
+      }
     },
-    {
-      id: 2,
-      title: "Músico para serenata",
-      description: "Busco guitarrista para dar una serenata romántica de aproximadamente 1 hora.",
-      categoryId: "musica",
-      subcategoryId: "cantante",
-      price: 180000,
-      location: "Medellín, Colombia",
-      latitude: 6.2476,
-      longitude: -75.5658,
-      date: "2025-04-10",
-      time: "20:00",
-      status: "active",
-      createdAt: new Date(Date.now() - 86400000).toISOString(),
-      responses: []
-    }
-  ];
+    enabled: !!user, // Solo ejecutar si hay un usuario autenticado
+    // Usar datos iniciales para facilitar el desarrollo (esto se eliminará en producción)
+    placeholderData: [
+      {
+        id: 1,
+        title: "Fotógrafo para cumpleaños",
+        description: "Necesito un fotógrafo para un cumpleaños de 50 personas. El evento durará aproximadamente 4 horas.",
+        categoryId: "audiovisuales",
+        subcategoryId: "fotografia",
+        price: 250000,
+        location: "Bogotá, Colombia",
+        latitude: 4.6097,
+        longitude: -74.0817,
+        date: "2025-04-15",
+        time: "18:00",
+        status: "active",
+        createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
+        responses: [
+          {
+            id: 101,
+            userName: "Carlos Jimenez",
+            userPhoto: "https://randomuser.me/api/portraits/men/32.jpg",
+            price: 300000,
+            description: "Tengo disponibilidad. Ofrezco servicio completo con edición y entrega de todas las fotos en alta calidad.",
+            rating: 4.8,
+            distance: 3.2,
+            timestamp: new Date(Date.now() - 1800000).toISOString(),
+            status: "pending"
+          },
+          {
+            id: 102,
+            userName: "Maria López",
+            userPhoto: "https://randomuser.me/api/portraits/women/44.jpg",
+            price: 270000,
+            description: "Disponible para esa fecha. Incluye 100 fotos editadas y entrega en 48h.",
+            rating: 4.9,
+            distance: 5.7,
+            timestamp: new Date(Date.now() - 3600000).toISOString(),
+            status: "pending"
+          }
+        ]
+      },
+      {
+        id: 2,
+        title: "Músico para serenata",
+        description: "Busco guitarrista para dar una serenata romántica de aproximadamente 1 hora.",
+        categoryId: "musica",
+        subcategoryId: "cantante",
+        price: 180000,
+        location: "Medellín, Colombia",
+        latitude: 6.2476,
+        longitude: -75.5658,
+        date: "2025-04-10",
+        time: "20:00",
+        status: "active",
+        createdAt: new Date(Date.now() - 86400000).toISOString(),
+        responses: []
+      }
+    ]
+  });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmitRequest = () => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmitRequest = async () => {
     // Validar formulario
     if (!formData.title || !formData.description || !formData.categoryId || !formData.price || !formData.date) {
       toast({
@@ -175,41 +196,150 @@ export default function RealTimeOffersPage() {
       return;
     }
 
-    // Aquí se enviaría la solicitud al backend
-    toast({
-      title: "Solicitud creada",
-      description: "Tu solicitud ha sido publicada con éxito",
-    });
+    // Si el usuario no está autenticado
+    if (!user) {
+      toast({
+        variant: "destructive",
+        title: "Inicio de sesión requerido",
+        description: "Debes iniciar sesión para crear una solicitud",
+      });
+      return;
+    }
 
-    // Cerrar el diálogo y limpiar el formulario
-    setNewRequestDialogOpen(false);
-    setFormData({
-      title: "",
-      description: "",
-      categoryId: "",
-      subcategoryId: "",
-      tags: [],
-      price: "",
-      priceUnit: "total",
-      location: "",
-      useCurrentLocation: true,
-      date: "",
-      time: ""
-    });
+    try {
+      setIsSubmitting(true);
+      
+      // Construir el objeto de solicitud
+      const requestData = {
+        ...formData,
+        price: parseFloat(formData.price),
+        userId: user.uid,
+        latitude: locationData?.coordinates?.latitude || null,
+        longitude: locationData?.coordinates?.longitude || null,
+        status: 'active',
+        createdAt: new Date().toISOString()
+      };
+      
+      // Enviar la solicitud al backend
+      const response = await apiRequest("POST", "/api/service-requests", requestData);
+      
+      if (response.ok) {
+        // Invalidar consultas para refrescar los datos
+        queryClient.invalidateQueries({ queryKey: ['/api/service-requests'] });
+        
+        toast({
+          title: "Solicitud creada",
+          description: "Tu solicitud ha sido publicada con éxito",
+        });
+        
+        // Cerrar el diálogo y limpiar el formulario
+        setNewRequestDialogOpen(false);
+        setFormData({
+          title: "",
+          description: "",
+          categoryId: "",
+          subcategoryId: "",
+          tags: [],
+          price: "",
+          priceUnit: "total",
+          location: "",
+          useCurrentLocation: true,
+          date: "",
+          time: ""
+        });
+      }
+    } catch (error) {
+      console.error("Error al crear solicitud:", error);
+      toast({
+        variant: "destructive",
+        title: "Error al crear solicitud",
+        description: "Ha ocurrido un error. Por favor, intenta de nuevo más tarde.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleAcceptOffer = (requestId: number, responseId: number) => {
-    toast({
-      title: "Oferta aceptada",
-      description: "Has aceptado la oferta del artista",
-    });
+  const [isProcessingResponse, setIsProcessingResponse] = useState<number | null>(null);
+
+  const handleAcceptOffer = async (requestId: number, responseId: number) => {
+    if (!user) {
+      toast({
+        variant: "destructive",
+        title: "Inicio de sesión requerido",
+        description: "Debes iniciar sesión para aceptar una oferta",
+      });
+      return;
+    }
+
+    try {
+      setIsProcessingResponse(responseId);
+      
+      // Enviar la acción al backend
+      const response = await apiRequest("PATCH", `/api/service-requests/${requestId}/responses/${responseId}`, {
+        status: 'accepted',
+        userId: user.uid
+      });
+      
+      if (response.ok) {
+        // Invalidar consultas para refrescar los datos
+        queryClient.invalidateQueries({ queryKey: ['/api/service-requests'] });
+        
+        toast({
+          title: "Oferta aceptada",
+          description: "Has aceptado la oferta del artista. Pronto recibirás más detalles.",
+        });
+      }
+    } catch (error) {
+      console.error("Error al aceptar oferta:", error);
+      toast({
+        variant: "destructive",
+        title: "Error al aceptar oferta",
+        description: "Ha ocurrido un error. Por favor, intenta de nuevo más tarde.",
+      });
+    } finally {
+      setIsProcessingResponse(null);
+    }
   };
 
-  const handleRejectOffer = (requestId: number, responseId: number) => {
-    toast({
-      title: "Oferta rechazada",
-      description: "Has rechazado la oferta del artista",
-    });
+  const handleRejectOffer = async (requestId: number, responseId: number) => {
+    if (!user) {
+      toast({
+        variant: "destructive",
+        title: "Inicio de sesión requerido",
+        description: "Debes iniciar sesión para rechazar una oferta",
+      });
+      return;
+    }
+
+    try {
+      setIsProcessingResponse(responseId);
+      
+      // Enviar la acción al backend
+      const response = await apiRequest("PATCH", `/api/service-requests/${requestId}/responses/${responseId}`, {
+        status: 'rejected',
+        userId: user.uid
+      });
+      
+      if (response.ok) {
+        // Invalidar consultas para refrescar los datos
+        queryClient.invalidateQueries({ queryKey: ['/api/service-requests'] });
+        
+        toast({
+          title: "Oferta rechazada",
+          description: "Has rechazado la oferta del artista",
+        });
+      }
+    } catch (error) {
+      console.error("Error al rechazar oferta:", error);
+      toast({
+        variant: "destructive",
+        title: "Error al rechazar oferta",
+        description: "Ha ocurrido un error. Por favor, intenta de nuevo más tarde.",
+      });
+    } finally {
+      setIsProcessingResponse(null);
+    }
   };
 
   return (
@@ -468,13 +598,46 @@ export default function RealTimeOffersPage() {
                     <DialogClose asChild>
                       <Button variant="outline">Cancelar</Button>
                     </DialogClose>
-                    <Button onClick={handleSubmitRequest}>Publicar Solicitud</Button>
+                    <Button 
+                      onClick={handleSubmitRequest} 
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? 'Publicando...' : 'Publicar Solicitud'}
+                    </Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
             </div>
 
-            {userRequests.length === 0 ? (
+            {isLoadingRequests ? (
+              <div className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center space-x-4">
+                      <Skeleton className="h-8 w-3/4" />
+                      <Skeleton className="h-6 w-16 ml-auto" />
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <Skeleton className="h-20 w-full mb-4" />
+                    <div className="grid grid-cols-2 gap-2">
+                      <Skeleton className="h-5 w-full" />
+                      <Skeleton className="h-5 w-full" />
+                      <Skeleton className="h-5 w-full" />
+                      <Skeleton className="h-5 w-full" />
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader>
+                    <Skeleton className="h-8 w-3/4" />
+                  </CardHeader>
+                  <CardContent>
+                    <Skeleton className="h-20 w-full" />
+                  </CardContent>
+                </Card>
+              </div>
+            ) : userRequests.length === 0 ? (
               <Card>
                 <CardContent className="py-8 text-center">
                   <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -509,7 +672,7 @@ export default function RealTimeOffersPage() {
                           </CardDescription>
                         </div>
                         <Badge variant={request.status === 'active' ? "default" : 
-                                        request.status === 'completed' ? "success" : "destructive"}>
+                                        request.status === 'completed' ? "outline" : "destructive"}>
                           {request.status === 'active' ? 'Activa' : 
                            request.status === 'completed' ? 'Completada' : 'Cancelada'}
                         </Badge>
@@ -601,21 +764,23 @@ export default function RealTimeOffersPage() {
                                         variant="outline" 
                                         onClick={() => handleRejectOffer(request.id, response.id)}
                                         className="text-destructive border-destructive hover:bg-destructive/10"
+                                        disabled={isProcessingResponse === response.id}
                                       >
                                         <XCircle className="h-4 w-4 mr-1" />
-                                        Rechazar
+                                        {isProcessingResponse === response.id ? 'Procesando...' : 'Rechazar'}
                                       </Button>
                                       <Button 
                                         size="sm"
                                         onClick={() => handleAcceptOffer(request.id, response.id)}
+                                        disabled={isProcessingResponse === response.id}
                                       >
                                         <CheckCircle className="h-4 w-4 mr-1" />
-                                        Aceptar
+                                        {isProcessingResponse === response.id ? 'Procesando...' : 'Aceptar'}
                                       </Button>
                                     </div>
                                   )}
                                   {response.status === 'accepted' && (
-                                    <Badge variant="success">Aceptada</Badge>
+                                    <Badge variant="outline" className="text-green-600 border-green-600">Aceptada</Badge>
                                   )}
                                   {response.status === 'rejected' && (
                                     <Badge variant="destructive">Rechazada</Badge>
