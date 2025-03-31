@@ -12,6 +12,7 @@ import CreateArtistProfilePage from "@/pages/create-artist-profile";
 import ProfilePage from "@/pages/profile";
 import NotFound from "@/pages/not-found";
 import BottomNavigation from "./components/bottom-navigation";
+import FavoritesPage from "@/pages/favorites"; // Added import
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
             <Route path="/artist/:id" component={ArtistProfilePage} />
             <Route path="/create-artist-profile" component={CreateArtistProfilePage} />
             <Route path="/profile" component={ProfilePage} />
+            <Route path="/favorites" component={FavoritesPage} /> {/* Added route */}
             <Route component={NotFound} />
           </Switch>
           <BottomNavigation />
