@@ -28,22 +28,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get('/api/users/profile', async (req: Request, res: Response) => {
     try {
-      // Get user from auth header - temporarily mocked for development
       const token = req.headers.authorization?.split('Bearer ')[1];
       if (!token) {
         return res.status(401).json({ message: 'Unauthorized' });
       }
-      
-      // Mock token validation for now
-      const decodedToken = { uid: token };
-      const user = await storage.getUserByFirebaseUid(decodedToken.uid);
-      
+
+      const user = await storage.getUserByFirebaseUid(token);
       if (!user) {
-        return res.status(404).json({ message: 'User not found' });
+        // Si el usuario no existe, creamos uno nuevo
+        const newUser = await storage.createUser({
+          firebaseUid: token,
+          email: '',
+          displayName: '',
+          role: 'user'
+        });
+        return res.json(newUser);
       }
       
       res.json(user);
     } catch (error) {
+      console.error('Error en /api/users/profile:', error);
       res.status(500).json({ message: 'Error fetching user profile' });
     }
   });

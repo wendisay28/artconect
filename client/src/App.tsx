@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import HomePage from "@/pages/home";
 import ExplorerPage from "@/pages/explorer";
 import ArtistProfilePage from "@/pages/artist-profile";
+import CreateArtistProfilePage from "@/pages/create-artist-profile";
 import EventDetailsPage from "@/pages/event-details";
 import EventCreatePage from "@/pages/event-create";
 import FavoritesPage from "@/pages/favorites";
@@ -66,7 +67,15 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <LocationProvider>
-          <Router />
+          <Switch>
+            <Route path="/" component={HomePage} />
+            <Route path="/explorer" component={ExplorerPage} />
+            <Route path="/artist/:id" component={ArtistProfilePage} />
+            <Route path="/create-artist-profile" component={CreateArtistProfilePage} />
+            <Route path="/profile" component={ProfilePage} />
+            <Route component={NotFound} />
+          </Switch>
+          <BottomNavigation />
           <Toaster />
         </LocationProvider>
       </AuthProvider>
