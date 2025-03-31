@@ -80,41 +80,28 @@ export default function ExplorerPage() {
         itemId: parseInt(id), // Convertir a número
       };
 
-      // Hacemos la petición para guardar en favoritos
       try {
+        // Hacemos la petición para guardar en favoritos
         await apiRequest("POST", "/api/favorites", favoriteData);
         
         // Refrescamos la caché de favoritos
         queryClient.invalidateQueries({ queryKey: [`/api/favorites/${activeTab}`] });
         
         toast({
-          title: "¡Éxito!",
-          description: "Se ha añadido a favoritos",
+          title: `${activeTab === "artists" ? "Artista" : "Evento"} guardado`,
+          description: "Se ha añadido a tus favoritos",
         });
       } catch (error) {
-        console.error('Error al añadir a favoritos:', error);
+        console.error("Error al guardar en favoritos:", error);
         toast({
           variant: "destructive",
-          title: "Error",
-          description: "No se pudo añadir a favoritos",
+          title: "Error al guardar",
+          description: "No se pudo añadir a favoritos, inténtalo de nuevo",
         });
+      } finally {
+        setLoadingLike(false);
+        goToNextItem();
       }
-
-      toast({
-        title: `${activeTab === "artists" ? "Artista" : "Evento"} guardado`,
-        description: `Se ha añadido a tus favoritos`,
-      });
-    } catch (error) {
-      console.error("Error al guardar en favoritos:", error);
-      toast({
-        variant: "destructive",
-        title: "Error al guardar",
-        description: "No se pudo añadir a favoritos, inténtalo de nuevo",
-      });
-    } finally {
-      setLoadingLike(false);
-      goToNextItem();
-    }
   };
 
   const handleDislike = (id: string) => {
