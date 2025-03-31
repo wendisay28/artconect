@@ -27,122 +27,76 @@ export interface ErrorMessage {
 }
 
 export type WebSocketMessage = ChatMessage | UserStatusUpdate | ErrorMessage;
-
-// Type for WebSocket connection state
 export type ConnectionStatus = 'connecting' | 'open' | 'closed' | 'error';
 
-/**
- * Hook to create and manage a WebSocket connection
- */
 export function useWebSocket() {
   const [status, setStatus] = useState<ConnectionStatus>('closed');
   const [messages, setMessages] = useState<WebSocketMessage[]>([]);
   const socket = useRef<WebSocket | null>(null);
 
-  // Initialize WebSocket connection with better error handling
   const connect = useCallback(() => {
-    // No conectar si ya está abierta la conexión
-    if (socket.current) {
-      // Verificar si el socket ya está conectado o en proceso de conexión
-      if (socket.current.readyState === WebSocket.OPEN) {
-        console.log('WebSocket already connected');
-        return;
-      } else if (socket.current.readyState === WebSocket.CONNECTING) {
-        console.log('WebSocket already connecting');
-        return;
-      }
+    if (socket.current?.readyState === WebSocket.OPEN) {
+      console.log('WebSocket already connected');
+      return;
+    }
+    if (socket.current?.readyState === WebSocket.CONNECTING) {
+      console.log('WebSocket already connecting');
+      return;
     }
 
     setStatus('connecting');
-    
-    // Create WebSocket with correct protocol and host
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const host = window.location.hostname;
-    const port = 5000; // Use the server port directly
-    const wsUrl = `${protocol}//${host}:${port}/ws`;
-    
-    console.log("Connecting to WebSocket URL:", wsUrl);
-    
+
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws`;
+
     try {
-      // Cerrar cualquier conexión existente antes de crear una nueva
-      if (socket.current) {
-        try {
-          socket.current.close();
-        } catch (e) {
-          console.log('Error cerrando el socket previo:', e);
-        }
-      }
+      socket.current = new WebSocket(wsUrl);
 
-      const ws = new WebSocket(wsUrl);
-      
-      ws.onopen = () => {
+      socket.current.onopen = () => {
+        console.log('WebSocket connected');
         setStatus('open');
-        console.log('WebSocket connection established successfully');
       };
-      
-      ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data) as WebSocketMessage;
-          console.log('WebSocket message received:', data.type);
-          setMessages(prev => [...prev, data]);
-        } catch (error) {
-          console.error('Failed to parse WebSocket message:', error);
-        }
-      };
-      
-      ws.onclose = (event) => {
+
+      socket.current.onclose = () => {
+        console.log('WebSocket closed');
         setStatus('closed');
-        console.log(`WebSocket connection closed. Code: ${event.code}, Reason: ${event.reason || 'No reason provided'}`);
-        
-        // Solo intentamos reconectar si no fue un cierre intencional (código 1000)
-        if (event.code !== 1000) {
-          // Attempt to reconnect after 3 seconds
-          console.log('Attempting to reconnect in 3 seconds...');
-          setTimeout(() => {
-            connect();
-          }, 3000);
-        }
       };
-      
-      ws.onerror = (error) => {
+
+      socket.current.onerror = (error) => {
+        console.error('WebSocket error:', error);
         setStatus('error');
-        console.error('WebSocket error occurred:', error);
-        
-        // No hacemos nada aquí, ya que onclose se llamará automáticamente después de un error
       };
-      
-      socket.current = ws;
+
+      socket.current.onmessage = (event) => {
+        const message = JSON.parse(event.data);
+        setMessages(prev => [...prev, message]);
+      };
+
     } catch (error) {
-      console.error('Failed to create WebSocket connection:', error);
+      console.error('Error creating WebSocket:', error);
       setStatus('error');
-      
-      // Intentar reconectar después de un error de creación
-      setTimeout(() => {
-        connect();
-      }, 5000);
     }
   }, []);
 
-  // Disconnect WebSocket
   const disconnect = useCallback(() => {
-    if (socket.current && socket.current.readyState === WebSocket.OPEN) {
+    if (socket.current) {
       socket.current.close();
+      socket.current = null;
     }
-    setStatus('closed');
   }, []);
 
-  // Send message through WebSocket
   const sendMessage = useCallback((message: WebSocketMessage) => {
     if (socket.current?.readyState === WebSocket.OPEN) {
       socket.current.send(JSON.stringify(message));
-      return true;
     }
-    return false;
   }, []);
 
-  // Send a chat message
-  const sendChatMessage = useCallback((chatId: number, senderId: number, content: string) => {
-    const message: ChatMessage = {
+  const clearMessages = useCallback(() => {
+    setMessages([]);
+  }, []);
+
+  const sendChatMessage = useCallback((chatId: number, content: string, senderId: number) => {
+    sendMessage({
       type: 'chat_message',
       payload: {
         chatId,
@@ -150,34 +104,19 @@ export function useWebSocket() {
         content,
         timestamp: Date.now()
       }
-    };
-    return sendMessage(message);
+    });
   }, [sendMessage]);
 
-  // Update user status
   const updateUserStatus = useCallback((userId: number, status: 'online' | 'offline') => {
-    const message: UserStatusUpdate = {
+    sendMessage({
       type: 'user_status',
-      payload: {
-        userId,
-        status
-      }
-    };
-    return sendMessage(message);
+      payload: { userId, status }
+    });
   }, [sendMessage]);
 
-  // Reset messages
-  const clearMessages = useCallback(() => {
-    setMessages([]);
-  }, []);
-
-  // Connect on component mount, disconnect on unmount
   useEffect(() => {
     connect();
-    
-    return () => {
-      disconnect();
-    };
+    return () => disconnect();
   }, [connect, disconnect]);
 
   return {
@@ -192,7 +131,7 @@ export function useWebSocket() {
   };
 }
 
-// Create a singleton WebSocket instance that can be imported and used throughout the app
+// Singleton instance
 let websocketInstance: ReturnType<typeof useWebSocket> | null = null;
 
 export function getWebSocketInstance() {
@@ -204,7 +143,6 @@ export function getWebSocketInstance() {
 
 export function initializeWebSocket() {
   if (!websocketInstance) {
-    // This is just to satisfy TypeScript, in reality this will be initialized properly when used in a component
     websocketInstance = {} as ReturnType<typeof useWebSocket>;
   }
   return websocketInstance;
