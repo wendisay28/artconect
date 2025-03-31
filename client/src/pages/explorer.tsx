@@ -47,7 +47,7 @@ export default function ExplorerPage() {
   const [loadingLike, setLoadingLike] = useState(false);
   const { user } = useAuth();
 
-  const handleLike = async (id: string) => {
+  const handleLike = async (id: string | number) => {
     // Si no hay usuario, mostramos un mensaje y no hacemos nada
     if (!user) {
       toast({
@@ -58,23 +58,26 @@ export default function ExplorerPage() {
       goToNextItem();
       return;
     }
-    
+
     try {
       setLoadingLike(true);
-      
+
+      // Obtener el ID numérico del usuario
+      const userProfile = await apiRequest("GET", "/api/users/profile");
+
       // Creamos el objeto de favorito según el tipo (artista o evento)
       const favoriteData = {
-        userId: user.uid, // Usar el ID del usuario actual
+        userId: userProfile.id, // Usando el ID numérico del usuario
         type: activeTab, // "artists" o "events"
         itemId: id,
       };
-      
+
       // Hacemos la petición para guardar en favoritos
       await apiRequest("POST", "/api/favorites", favoriteData);
-      
+
       // Refrescamos la caché de favoritos
       queryClient.invalidateQueries({ queryKey: [`/api/favorites/${activeTab}`] });
-      
+
       toast({
         title: `${activeTab === "artists" ? "Artista" : "Evento"} guardado`,
         description: `Se ha añadido a tus favoritos`,
@@ -119,7 +122,7 @@ export default function ExplorerPage() {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     });
-    
+
     if (maxPrice) {
       return `${formatter.format(minPrice)} - ${formatter.format(maxPrice)} / ${unit}`;
     }
@@ -130,7 +133,7 @@ export default function ExplorerPage() {
     <div className="container mx-auto px-4 py-6">
       <header className="flex justify-between items-center mb-6">
         <h1 className="font-bold text-2xl">Explorar</h1>
-        
+
         <div className="flex items-center">
           <SearchFilters 
             onApplyFilters={handleApplyFilters}
@@ -160,7 +163,7 @@ export default function ExplorerPage() {
           </div>
         </div>
       </header>
-      
+
       {/* Swipeable Cards Area */}
       <div className="relative h-[calc(100vh-13rem)] max-h-[700px] mx-auto max-w-md mt-4">
         {isLoading ? (
@@ -194,7 +197,7 @@ export default function ExplorerPage() {
                 />
               )
             ))}
-            
+
             {/* Empty state (shown when all cards are swiped) */}
             {currentIndex >= items.length && (
               <Card className="absolute inset-0 rounded-xl overflow-hidden flex flex-col items-center justify-center text-center p-6">
