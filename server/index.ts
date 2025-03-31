@@ -64,7 +64,20 @@ app.use((req, res, next) => {
     port,
     host: "0.0.0.0",
     reusePort: true,
-  }, () => {
+  }).on('error', (err: any) => {
+    if (err.code === 'EADDRINUSE') {
+      log(`Port ${port} is busy, trying ${port + 1}`);
+      server.listen({
+        port: port + 1,
+        host: "0.0.0.0",
+        reusePort: true,
+      }, () => {
+        log(`serving on port ${port + 1}`);
+      });
+    } else {
+      log('Server error:', err);
+    }
+  }).on('listening', () => {
     log(`serving on port ${port}`);
   });
 })();
