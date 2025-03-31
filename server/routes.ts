@@ -335,7 +335,21 @@ const decodedToken = { uid: token };
 
       const user = await storage.getUserByFirebaseUid(token);
       if (!user) {
-        return res.status(404).json({ message: 'User not found' });
+        // Si el usuario no existe, lo creamos
+        const newUser = await storage.createUser({
+          firebaseUid: token,
+          email: '',
+          displayName: '',
+          role: 'user'
+        });
+        
+        const favoriteData = {
+          ...req.body,
+          userId: newUser.id
+        };
+        const parsedData = insertFavoriteSchema.parse(favoriteData);
+        const newFavorite = await storage.createFavorite(parsedData);
+        return res.status(201).json(newFavorite);
       }
 
       const favoriteData = {
