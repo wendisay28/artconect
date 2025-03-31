@@ -21,6 +21,9 @@ import RealTimeOffersPage from "@/pages/real-time-offers";
 import BottomNavigation from "./components/bottom-navigation";
 import LocationModal from "./components/location-modal";
 import SettingsMenu from "./components/settings-menu";
+import React from 'react';
+import { Routes, Route } from 'react-router-dom';
+
 
 function Router() {
   const [location] = useLocation();
