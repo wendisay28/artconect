@@ -67,14 +67,14 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <LocationProvider>
-          <Switch>
-            <Route path="/" component={HomePage} />
-            <Route path="/explorer" component={ExplorerPage} />
-            <Route path="/artist/:id" component={ArtistProfilePage} />
-            <Route path="/create-artist-profile" component={CreateArtistProfilePage} />
-            <Route path="/profile" component={ProfilePage} />
-            <Route component={NotFound} />
-          </Switch>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/explorer" element={<ExplorerPage />} />
+            <Route path="/artist/:id" element={<ArtistProfilePage />} />
+            <Route path="/create-artist-profile" element={<CreateArtistProfilePage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="*" element={<div>Not Found</div>} />
+          </Routes>
           <BottomNavigation />
           <Toaster />
         </LocationProvider>
