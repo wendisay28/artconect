@@ -48,14 +48,16 @@ export default function ExplorerPage() {
   const { user } = useAuth();
 
   const handleLike = async (id: string | number) => {
-    // Si no hay usuario, mostramos un mensaje y no hacemos nada
     if (!user) {
       toast({
-        variant: "destructive",
         title: "Necesitas iniciar sesión",
         description: "Para añadir a favoritos, inicia sesión primero",
       });
-      goToNextItem();
+      return;
+    }
+
+    if (!id) {
+      console.error('ID inválido:', id);
       return;
     }
 
@@ -69,10 +71,24 @@ export default function ExplorerPage() {
       };
 
       // Hacemos la petición para guardar en favoritos
-      await apiRequest("POST", "/api/favorites", favoriteData);
-
-      // Refrescamos la caché de favoritos
-      queryClient.invalidateQueries({ queryKey: [`/api/favorites/${activeTab}`] });
+      try {
+        await apiRequest("POST", "/api/favorites", favoriteData);
+        
+        // Refrescamos la caché de favoritos
+        queryClient.invalidateQueries({ queryKey: [`/api/favorites/${activeTab}`] });
+        
+        toast({
+          title: "¡Éxito!",
+          description: "Se ha añadido a favoritos",
+        });
+      } catch (error) {
+        console.error('Error al añadir a favoritos:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "No se pudo añadir a favoritos",
+        });
+      }b}`] });
 
       toast({
         title: `${activeTab === "artists" ? "Artista" : "Evento"} guardado`,
