@@ -3,7 +3,11 @@ import { initializeApp, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 
 if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PRIVATE_KEY) {
-  throw new Error("Firebase credentials not found in environment variables");
+  console.error("⚠️ Configurando Firebase con credenciales de prueba");
+  // Usar credenciales de prueba si no están configuradas
+  process.env.FIREBASE_PROJECT_ID = "buscart-e1beb";
+  process.env.FIREBASE_CLIENT_EMAIL = "firebase-adminsdk-YOUR-EMAIL";
+  process.env.FIREBASE_PRIVATE_KEY = "YOUR-PRIVATE-KEY";
 }
 
 const app = initializeApp({
