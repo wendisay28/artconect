@@ -36,12 +36,34 @@ app.use((req, res, next) => {
       serveStatic(app);
     }
 
-    const port = process.env.PORT || 5000;
+    const port = parseInt(process.env.PORT || "5000");
     const host = '0.0.0.0';
 
-    server.listen(port, host, () => {
-      log(`🚀 Server running at http://${host}:${port}`);
-    });
+    try {
+      await new Promise((resolve, reject) => {
+        server.listen(port, host)
+          .once('listening', () => {
+            log(`🚀 Server running at http://${host}:${port}`);
+            resolve(true);
+          })
+          .once('error', (err) => {
+            if (err.code === 'EADDRINUSE') {
+              log(`Puerto ${port} ocupado, intentando en puerto ${port + 1}`);
+              server.listen(port + 1, host)
+                .once('listening', () => {
+                  log(`🚀 Servidor ejecutándose en puerto ${port + 1}`);
+                  resolve(true);
+                })
+                .once('error', reject);
+            } else {
+              reject(err);
+            }
+          });
+      });
+    } catch (err) {
+      console.error('Error fatal al iniciar el servidor:', err);
+      process.exit(1);
+    }
 
   } catch (err) {
     console.error('Fatal server error:', err);
