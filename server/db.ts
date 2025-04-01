@@ -14,9 +14,6 @@ try {
   });
   db = getFirestore(app);
   console.log('✅ Firebase Admin inicializado correctamente');
-
-  db = getFirestore(app);
-  console.log('✅ Firebase Admin inicializado correctamente');
 } catch (error) {
   console.error('❌ Error inicializando Firebase Admin:', error);
   throw error;
