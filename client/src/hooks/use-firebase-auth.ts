@@ -1,10 +1,12 @@
+
 import { useState } from "react";
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   updateProfile,
   GoogleAuthProvider,
-  signInWithPopup
+  signInWithPopup,
+  UserCredential
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
@@ -21,9 +23,47 @@ interface SignUpCredentials extends AuthCredentials {
   displayName: string;
 }
 
+const handleAuthError = (error: any): string => {
+  switch (error.code) {
+    case 'auth/email-already-in-use':
+      return 'Este correo ya está registrado';
+    case 'auth/invalid-email':
+      return 'Correo electrónico inválido';
+    case 'auth/operation-not-allowed':
+      return 'Operación no permitida';
+    case 'auth/weak-password':
+      return 'La contraseña es muy débil';
+    case 'auth/user-disabled':
+      return 'Usuario deshabilitado';
+    case 'auth/user-not-found':
+      return 'Usuario no encontrado';
+    case 'auth/wrong-password':
+      return 'Contraseña incorrecta';
+    default:
+      return 'Error de autenticación';
+  }
+};
+
 export const useFirebaseAuth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+
+  const createUserInDatabase = async (userCredential: UserCredential, username: string, displayName: string) => {
+    try {
+      await apiRequest("POST", "/api/users", {
+        firebaseUid: userCredential.user.uid,
+        email: userCredential.user.email,
+        username,
+        displayName,
+        photoURL: userCredential.user.photoURL || "",
+        role: "user"
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+    } catch (error) {
+      console.error("Error creating user in database:", error);
+      throw error;
+    }
+  };
 
   const signIn = async ({ email, password }: AuthCredentials) => {
     setIsLoading(true);
@@ -31,11 +71,11 @@ export const useFirebaseAuth = () => {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       toast({
         title: "Inicio de sesión exitoso",
-        description: `Bienvenido de nuevo, ${userCredential.user.displayName || userCredential.user.email}`,
+        description: `Bienvenido, ${userCredential.user.displayName || userCredential.user.email}`,
       });
       return userCredential.user;
-    } catch (error) {
-      const errorMessage = (error as Error).message;
+    } catch (error: any) {
+      const errorMessage = handleAuthError(error);
       toast({
         variant: "destructive",
         title: "Error al iniciar sesión",
@@ -50,25 +90,10 @@ export const useFirebaseAuth = () => {
   const signUp = async ({ email, password, username, displayName }: SignUpCredentials) => {
     setIsLoading(true);
     try {
-      // Create user in Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       
-      // Update profile with display name
-      await updateProfile(userCredential.user, {
-        displayName: displayName,
-      });
-
-      // Create user in our database
-      await apiRequest("POST", "/api/users", {
-        firebaseUid: userCredential.user.uid,
-        email: email,
-        username: username,
-        displayName: displayName,
-        photoURL: userCredential.user.photoURL || "",
-      });
-
-      // Invalidate users cache
-      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      await updateProfile(userCredential.user, { displayName });
+      await createUserInDatabase(userCredential, username, displayName);
 
       toast({
         title: "Registro exitoso",
@@ -76,8 +101,8 @@ export const useFirebaseAuth = () => {
       });
 
       return userCredential.user;
-    } catch (error) {
-      const errorMessage = (error as Error).message;
+    } catch (error: any) {
+      const errorMessage = handleAuthError(error);
       toast({
         variant: "destructive",
         title: "Error al registrarse",
@@ -95,29 +120,19 @@ export const useFirebaseAuth = () => {
       const provider = new GoogleAuthProvider();
       const userCredential = await signInWithPopup(auth, provider);
       
-      // Check if user exists in our database, if not create it
-      try {
-        await apiRequest("POST", "/api/users", {
-          firebaseUid: userCredential.user.uid,
-          email: userCredential.user.email || "",
-          username: userCredential.user.email?.split('@')[0] || userCredential.user.uid,
-          displayName: userCredential.user.displayName || "",
-          photoURL: userCredential.user.photoURL || "",
-        });
-        // Invalidate users cache
-        queryClient.invalidateQueries({ queryKey: ['/api/users'] });
-      } catch (error) {
-        // User might already exist, that's fine
-        console.log("User might already exist:", error);
-      }
+      await createUserInDatabase(
+        userCredential,
+        userCredential.user.email?.split('@')[0] || userCredential.user.uid,
+        userCredential.user.displayName || userCredential.user.email?.split('@')[0] || ''
+      );
 
       toast({
         title: "Inicio de sesión exitoso",
         description: `Bienvenido, ${userCredential.user.displayName || userCredential.user.email}`,
       });
       return userCredential.user;
-    } catch (error) {
-      const errorMessage = (error as Error).message;
+    } catch (error: any) {
+      const errorMessage = handleAuthError(error);
       toast({
         variant: "destructive",
         title: "Error al iniciar sesión con Google",

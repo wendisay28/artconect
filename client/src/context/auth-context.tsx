@@ -19,26 +19,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      console.log("Auth state changed:", user ? "User logged in" : "No user");
-      
-      if (user) {
-        try {
-          // Si el usuario está autenticado, intentar obtener el token
-          const token = await user.getIdToken();
-          console.log("User authenticated with token available");
-          
-          // Guardar el token JWT en localStorage (opcional)
+      try {
+        if (user) {
+          const token = await user.getIdToken(true);
           localStorage.setItem('auth_token', token);
-        } catch (error) {
-          console.error("Error getting auth token:", error);
+          
+          // Refresh token periódicamente
+          const refreshToken = setInterval(async () => {
+            const newToken = await user.getIdToken(true);
+            localStorage.setItem('auth_token', newToken);
+          }, 30 * 60 * 1000); // Cada 30 minutos
+
+          setUser(user);
+          return () => clearInterval(refreshToken);
+        } else {
+          localStorage.removeItem('auth_token');
+          setUser(null);
         }
-      } else {
-        // Limpiar el token si no hay usuario
-        localStorage.removeItem('auth_token');
+      } catch (error) {
+        console.error("Error in auth state change:", error);
+        toast({
+          variant: "destructive",
+          title: "Error de autenticación",
+          description: "Ha ocurrido un error con tu sesión",
+        });
+      } finally {
+        setLoading(false);
       }
-      
-      setUser(user);
-      setLoading(false);
     });
 
     return () => unsubscribe();

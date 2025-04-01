@@ -3,49 +3,25 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
-// Obtenemos las variables de entorno de manera segura
-const firebaseApiKey = typeof import.meta.env !== 'undefined' ? import.meta.env.VITE_FIREBASE_API_KEY : process.env.VITE_FIREBASE_API_KEY;
-const firebaseProjectId = typeof import.meta.env !== 'undefined' ? import.meta.env.VITE_FIREBASE_PROJECT_ID : process.env.VITE_FIREBASE_PROJECT_ID;
-const firebaseAppId = typeof import.meta.env !== 'undefined' ? import.meta.env.VITE_FIREBASE_APP_ID : process.env.VITE_FIREBASE_APP_ID;
+const firebaseApiKey = import.meta.env.VITE_FIREBASE_API_KEY;
+const firebaseProjectId = import.meta.env.VITE_FIREBASE_PROJECT_ID;
+const firebaseAppId = import.meta.env.VITE_FIREBASE_APP_ID;
 
-// Verifica si tenemos las variables necesarias
-const hasRequiredEnvVars = firebaseApiKey && firebaseProjectId && firebaseAppId;
-
-console.log("Firebase Auth Domain Info:", {
-  domain: window.location.hostname,
-  projectId: firebaseProjectId
-});
-
-// Configuración de Firebase con dominio dinámico
-const currentDomain = window.location.hostname;
+if (!firebaseApiKey || !firebaseProjectId || !firebaseAppId) {
+  throw new Error("Firebase environment variables are missing");
+}
 
 const firebaseConfig = {
-  apiKey: firebaseApiKey || "",
-  authDomain: `${firebaseProjectId || ""}.firebaseapp.com`,
-  authEmulator: currentDomain.includes('replit') ? `https://${currentDomain}` : undefined,
-  projectId: firebaseProjectId || "",
-  storageBucket: `${firebaseProjectId || ""}.appspot.com`,
-  appId: firebaseAppId || "",
+  apiKey: firebaseApiKey,
+  authDomain: `${firebaseProjectId}.firebaseapp.com`,
+  projectId: firebaseProjectId,
+  storageBucket: `${firebaseProjectId}.appspot.com`,
+  appId: firebaseAppId,
 };
 
-// Initialize Firebase objects
-let app = {};
-let auth = { currentUser: null, onAuthStateChanged: () => {}, signOut: async () => {} };
-let db = { collection: () => {} };
-let storage = {};
-
-try {
-  if (!hasRequiredEnvVars) {
-    throw new Error("Firebase configuration is incomplete. Check your environment variables.");
-  }
-  app = initializeApp(firebaseConfig);
-  auth = getAuth(app);
-  db = getFirestore(app);
-  storage = getStorage(app);
-  console.log("Firebase initialized successfully with config:", 
-    { projectId: firebaseConfig.projectId, authDomain: firebaseConfig.authDomain });
-} catch (error) {
-  console.error("Error initializing Firebase:", error);
-}
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
 
 export { app, auth, db, storage };
