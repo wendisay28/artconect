@@ -7,11 +7,17 @@ const app = express();
 // Middlewares básicos
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(express.static('client/public'));
 
 // Logging middleware simplificado
 app.use((req, res, next) => {
   log(`${req.method} ${req.path}`);
   next();
+});
+
+// Manejo específico para favicon.ico
+app.get('/favicon.ico', (req, res) => {
+  res.status(204).end();
 });
 
 (async () => {
