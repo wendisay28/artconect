@@ -1,3 +1,4 @@
+
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
@@ -16,7 +17,9 @@ const firebaseConfig = {
   authDomain: `${firebaseProjectId}.firebaseapp.com`,
   projectId: firebaseProjectId,
   storageBucket: `${firebaseProjectId}.appspot.com`,
+  messagingSenderId: "288663409318",
   appId: firebaseAppId,
+  measurementId: "G-75JBY8VWKL"
 };
 
 const app = initializeApp(firebaseConfig);
