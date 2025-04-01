@@ -1,156 +1,152 @@
-import { useState, useEffect } from 'react';
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { formatDistanceToNow } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { cn } from "@/lib/utils";
-import { Check, CheckCheck, FileIcon, Download } from 'lucide-react';
-import { Button } from "@/components/ui/button";
 
-interface ChatMessageProps {
+import { useState, useEffect } from 'react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Image, File, Send, Check, CheckCheck } from 'lucide-react';
+
+interface ChatMessage {
   id: string;
-  senderId: number;
+  text: string;
+  sender: string;
   senderName: string;
   senderAvatar?: string;
-  content: string;
   timestamp: Date;
-  isCurrentUser: boolean;
-  status?: 'sending' | 'sent' | 'delivered' | 'read' | 'error';
-  file?: {name: string; size: string; url: string};
+  read: boolean;
+  type: 'text' | 'image' | 'file';
+  fileUrl?: string;
+  fileName?: string;
 }
 
-export function ChatMessage({
-  id,
-  senderId,
-  senderName,
-  senderAvatar,
-  content,
-  timestamp,
-  isCurrentUser,
-  status = 'sent',
-  file
-}: ChatMessageProps) {
-  const [timeAgo, setTimeAgo] = useState<string>(
-    formatDistanceToNow(timestamp, { addSuffix: true, locale: es })
-  );
+interface ChatMessageProps {
+  message: ChatMessage;
+  isCurrentUser: boolean;
+  onSendMessage: (text: string, type: 'text' | 'image' | 'file', file?: File) => void;
+}
 
-  // Update the time ago every minute
+export default function ChatMessage({ message, isCurrentUser, onSendMessage }: ChatMessageProps) {
+  const [isTyping, setIsTyping] = useState(false);
+  const [inputMessage, setInputMessage] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
   useEffect(() => {
-    const interval = setInterval(() => {
-      setTimeAgo(formatDistanceToNow(timestamp, { addSuffix: true, locale: es }));
-    }, 60000);
+    let timeout: NodeJS.Timeout;
+    if (isTyping) {
+      timeout = setTimeout(() => setIsTyping(false), 1500);
+    }
+    return () => clearTimeout(timeout);
+  }, [isTyping]);
 
-    return () => clearInterval(interval);
-  }, [timestamp]);
-
-  // Get initials for avatar fallback
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(n => n[0])
-      .join('')
-      .toUpperCase()
-      .substring(0, 2);
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      const type = file.type.startsWith('image/') ? 'image' : 'file';
+      onSendMessage('', type, file);
+    }
   };
 
-  // Status icon or text
-  const renderStatus = () => {
-    if (!isCurrentUser) return null;
-
-    switch (status) {
-      case 'sending':
-        return <span className="text-xs text-muted-foreground">Enviando...</span>;
-      case 'sent':
-        return <span className="text-xs text-muted-foreground">Enviado</span>;
-      case 'delivered':
-        return <span className="text-xs text-muted-foreground">Entregado</span>;
-      case 'read':
-        return <span className="text-xs text-primary">Leído</span>;
-      case 'error':
-        return <span className="text-xs text-destructive">Error al enviar</span>;
-      default:
-        return null;
+  const handleSendMessage = () => {
+    if (inputMessage.trim()) {
+      onSendMessage(inputMessage.trim(), 'text');
+      setInputMessage('');
     }
   };
 
   return (
-    <div
-      className={cn(
-        "flex gap-2 mb-4",
-        isCurrentUser ? "flex-row-reverse" : "flex-row"
-      )}
-    >
-      {!isCurrentUser && (
-        <Avatar className="h-8 w-8">
-          {senderAvatar ? (
-            <AvatarImage src={senderAvatar} alt={senderName} />
-          ) : (
-            <AvatarFallback>{getInitials(senderName)}</AvatarFallback>
-          )}
-        </Avatar>
-      )}
-
-      <div className={cn("max-w-[70%]")}>
+    <div className={`flex flex-col gap-2 ${isCurrentUser ? 'items-end' : 'items-start'}`}>
+      <div className="flex items-end gap-2">
         {!isCurrentUser && (
-          <div className="text-xs text-muted-foreground mb-1">{senderName}</div>
+          <Avatar className="h-8 w-8">
+            <AvatarImage src={message.senderAvatar} />
+            <AvatarFallback>{message.senderName.slice(0, 2).toUpperCase()}</AvatarFallback>
+          </Avatar>
         )}
-
-        <div
-          className={cn(
-            "rounded-lg p-3",
-            isCurrentUser
-              ? "bg-primary text-primary-foreground"
-              : "bg-muted"
+        
+        <div className={`max-w-[70%] rounded-lg p-3 ${
+          isCurrentUser ? 'bg-primary text-primary-foreground' : 'bg-muted'
+        }`}>
+          {message.type === 'text' && (
+            <p>{message.text}</p>
           )}
+          
+          {message.type === 'image' && (
+            <img 
+              src={message.fileUrl} 
+              alt="Imagen compartida" 
+              className="rounded-md max-w-full h-auto"
+            />
+          )}
+          
+          {message.type === 'file' && (
+            <a 
+              href={message.fileUrl}
+              target="_blank"
+              rel="noopener noreferrer" 
+              className="flex items-center gap-2 text-sm"
+            >
+              <File className="h-4 w-4" />
+              <span>{message.fileName}</span>
+            </a>
+          )}
+          
+          <div className="flex items-center justify-end gap-1 mt-1">
+            <span className="text-xs opacity-70">
+              {new Date(message.timestamp).toLocaleTimeString()}
+            </span>
+            {isCurrentUser && (
+              message.read ? 
+                <CheckCheck className="h-4 w-4" /> : 
+                <Check className="h-4 w-4" />
+            )}
+          </div>
+        </div>
+      </div>
+
+      {isTyping && !isCurrentUser && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="typing-indicator">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+          Escribiendo...
+        </div>
+      )}
+
+      <div className="flex items-center gap-2 w-full mt-4">
+        <Input
+          type="text"
+          placeholder="Escribe un mensaje..."
+          value={inputMessage}
+          onChange={(e) => {
+            setInputMessage(e.target.value);
+            setIsTyping(true);
+          }}
+          onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+        />
+        
+        <Button variant="outline" size="icon" className="flex-shrink-0" asChild>
+          <label>
+            <input
+              type="file"
+              accept="image/*,.pdf,.doc,.docx"
+              className="hidden"
+              onChange={handleFileSelect}
+            />
+            <Image className="h-4 w-4" />
+          </label>
+        </Button>
+        
+        <Button 
+          variant="default" 
+          size="icon"
+          className="flex-shrink-0"
+          onClick={handleSendMessage}
         >
-          {content}
-          {file && <FileAttachment name={file.name} size={file.size} url={file.url}/>}
-        </div>
-
-        <div className="flex mt-1 text-xs text-muted-foreground justify-between">
-          <span>{timeAgo}</span>
-          {renderStatus()}
-        </div>
+          <Send className="h-4 w-4" />
+        </Button>
       </div>
-    </div>
-  );
-}
-
-export function ChatTypingIndicator({ name }: { name: string }) {
-  return (
-    <div className="flex items-center space-x-2 text-muted-foreground text-sm">
-      <span>{name} está escribiendo</span>
-      <div className="flex space-x-1">
-        <div className="w-1.5 h-1.5 bg-current rounded-full animate-bounce" />
-        <div className="w-1.5 h-1.5 bg-current rounded-full animate-bounce delay-100" />
-        <div className="w-1.5 h-1.5 bg-current rounded-full animate-bounce delay-200" />
-      </div>
-    </div>
-  );
-}
-
-export function MessageStatus({ status }: { status: 'sent' | 'delivered' | 'read' }) {
-  return (
-    <div className="flex items-center space-x-1 text-xs">
-      {status === 'sent' && <Check className="h-3 w-3 text-muted-foreground" />}
-      {status === 'delivered' && <CheckCheck className="h-3 w-3 text-muted-foreground" />}
-      {status === 'read' && <CheckCheck className="h-3 w-3 text-primary" />}
-    </div>
-  );
-}
-
-export function FileAttachment({ name, size, url }: { name: string; size: string; url: string }) {
-  return (
-    <div className="flex items-center space-x-2 p-2 rounded-md bg-accent/50">
-      <FileIcon className="h-4 w-4" />
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate">{name}</p>
-        <p className="text-xs text-muted-foreground">{size}</p>
-      </div>
-      <Button variant="ghost" size="icon" asChild>
-        <a href={url} download>
-          <Download className="h-4 w-4" />
-        </a>
-      </Button>
     </div>
   );
 }
