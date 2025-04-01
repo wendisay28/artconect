@@ -54,8 +54,26 @@ export default function AuthDialog({ onClose }: AuthDialogProps) {
     if (!email || !password || !username || !displayName) {
       toast({
         variant: "destructive",
-        title: "Error",
+        title: "Campos incompletos",
         description: "Por favor completa todos los campos",
+      });
+      return;
+    }
+
+    if (password.length < 6) {
+      toast({
+        variant: "destructive",
+        title: "Contraseña débil",
+        description: "La contraseña debe tener al menos 6 caracteres"
+      });
+      return;
+    }
+
+    if (username.length < 3) {
+      toast({
+        variant: "destructive", 
+        title: "Nombre de usuario inválido",
+        description: "El nombre de usuario debe tener al menos 3 caracteres"
       });
       return;
     }
@@ -63,8 +81,8 @@ export default function AuthDialog({ onClose }: AuthDialogProps) {
     try {
       await signUp({ email, password, username, displayName });
       onClose();
-    } catch (error) {
-      // Error is handled in the hook
+    } catch (error: any) {
+      console.error('Signup error:', error);
     }
   };
 
