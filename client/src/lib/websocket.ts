@@ -65,10 +65,7 @@ export function useWebSocket() {
 
     try {
       // Obtener el hostname desde window.location
-      const hostname = window.location.hostname;
-      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-      const port = window.location.port ? `:${window.location.port}` : '';
-      const wsUrl = `${protocol}//${hostname}${port}/ws`;
+      const wsUrl = `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}/ws`;
       console.log("Attempting WebSocket connection to:", wsUrl);
 
       socket.current = new WebSocket(wsUrl);

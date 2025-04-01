@@ -12,7 +12,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from "date-fns";
-import { ChatMessage, ChatTypingIndicator } from "@/components/chat-message";
+import ChatMessage from "@/components/chat-message";
+import { ChatTypingIndicator } from "@/components/chat-message";
 import { Send, ArrowLeft, MoreVertical, Info, UserCheck, VideoIcon, Phone } from "lucide-react";
 import { 
   DropdownMenu,
