@@ -1,9 +1,11 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Info, ThumbsUp, X } from "lucide-react";
+import { Heart, Info, Send, Star, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Link } from "wouter";
+import { useToast } from "@/hooks/use-toast";
 
 interface SwipeableCardProps {
   id: string;
@@ -14,8 +16,10 @@ interface SwipeableCardProps {
   location: string;
   distance?: number;
   priceRange: string;
+  rating?: number;
   onLike: (id: string) => void;
   onDislike: (id: string) => void;
+  onOffer?: (id: string) => void;
   isLast?: boolean;
 }
 
@@ -28,15 +32,20 @@ export default function SwipeableCard({
   location,
   distance,
   priceRange,
+  rating,
   onLike,
   onDislike,
+  onOffer,
   isLast = false
 }: SwipeableCardProps) {
   const [swipeDirection, setSwipeDirection] = useState<"left" | "right" | null>(null);
   const [startX, setStartX] = useState(0);
   const [offsetX, setOffsetX] = useState(0);
+  const [isLiked, setIsLiked] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const isSwiping = useRef(false);
+  const { toast } = useToast();
 
   const handleTouchStart = (e: React.TouchEvent) => {
     setStartX(e.touches[0].clientX);
@@ -49,7 +58,6 @@ export default function SwipeableCard({
     const diff = currentX - startX;
     setOffsetX(diff);
     
-    // Determine swipe direction for visual feedback
     if (diff > 50) {
       setSwipeDirection("right");
     } else if (diff < -50) {
@@ -63,34 +71,71 @@ export default function SwipeableCard({
     isSwiping.current = false;
     
     if (offsetX > 100) {
-      // Swipe right - like
-      onLike(id);
+      handleLike();
     } else if (offsetX < -100) {
-      // Swipe left - dislike
-      onDislike(id);
-    } else {
-      // Reset position
-      setOffsetX(0);
-      setSwipeDirection(null);
+      handleDislike();
+    }
+    setOffsetX(0);
+    setSwipeDirection(null);
+  };
+
+  const handleDislike = async () => {
+    setSwipeDirection("left");
+    setIsLoading(true);
+    try {
+      await onDislike(id);
+      toast({
+        description: "Artista descartado",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        description: "Error al descartar artista",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleDislike = () => {
-    setSwipeDirection("left");
-    setTimeout(() => {
-      onDislike(id);
-    }, 200);
+  const handleLike = async () => {
+    setSwipeDirection("right");
+    setIsLoading(true);
+    try {
+      await onLike(id);
+      setIsLiked(true);
+      toast({
+        description: "¡Artista guardado en favoritos!",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        description: "Error al guardar en favoritos",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleLike = () => {
-    setSwipeDirection("right");
-    setTimeout(() => {
-      onLike(id);
-    }, 200);
+  const handleOffer = async () => {
+    if (onOffer) {
+      setIsLoading(true);
+      try {
+        await onOffer(id);
+        toast({
+          description: "Oferta enviada exitosamente",
+        });
+      } catch (error) {
+        toast({
+          variant: "destructive",
+          description: "Error al enviar oferta",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    }
   };
 
   useEffect(() => {
-    // Cleanup function
     return () => {
       isSwiping.current = false;
     };
@@ -100,9 +145,10 @@ export default function SwipeableCard({
     <Card 
       ref={cardRef}
       className={cn(
-        "absolute inset-0 rounded-xl overflow-hidden shadow-xl transition-transform",
+        "absolute inset-0 rounded-xl overflow-hidden shadow-xl transition-all duration-300",
         swipeDirection === "left" && "animate-swipe-left",
-        swipeDirection === "right" && "animate-swipe-right"
+        swipeDirection === "right" && "animate-swipe-right",
+        isLoading && "opacity-80"
       )}
       style={{ 
         transform: `translateX(${offsetX}px) rotate(${offsetX * 0.05}deg)`,
@@ -111,75 +157,84 @@ export default function SwipeableCard({
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      <div className="relative h-full">
+      <div className="relative h-full bg-gradient-to-b from-transparent to-black/60">
         <img 
           src={imageUrl || "https://via.placeholder.com/600x800"}
           alt={name} 
-          className="w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
         
-        {/* Like/Dislike Indicators */}
+        {/* Indicators */}
         {swipeDirection === "right" && (
-          <div className="absolute top-6 right-6 bg-green-500 text-white px-4 py-2 rounded-full text-lg font-bold border-2 border-white transform rotate-12">
+          <div className="absolute top-6 right-6 bg-green-500 text-white px-4 py-2 rounded-full text-lg font-bold border-2 border-white transform rotate-12 animate-bounce">
             LIKE
           </div>
         )}
         {swipeDirection === "left" && (
-          <div className="absolute top-6 left-6 bg-red-500 text-white px-4 py-2 rounded-full text-lg font-bold border-2 border-white transform -rotate-12">
+          <div className="absolute top-6 left-6 bg-red-500 text-white px-4 py-2 rounded-full text-lg font-bold border-2 border-white transform -rotate-12 animate-bounce">
             NOPE
           </div>
         )}
         
         {/* Artist Info */}
-        <div className="absolute bottom-0 left-0 right-0 p-6">
-          <div className="flex justify-between items-end">
+        <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
+          <div className="space-y-4">
             <div>
-              <h2 className="text-white text-3xl font-bold">
-                {name}{age ? `, ${age}` : ""}
+              <h2 className="text-3xl font-bold flex items-center gap-2">
+                {name}
+                {age && <span className="text-xl">{age}</span>}
+                {rating && (
+                  <div className="flex items-center text-yellow-400 text-sm ml-2">
+                    <Star className="fill-current h-4 w-4 mr-1" />
+                    {rating.toFixed(1)}
+                  </div>
+                )}
               </h2>
-              <p className="text-white/90 flex items-center mt-1">
-                <span className="mr-1">🎵</span>
-                {role}
+              <p className="text-lg opacity-90 flex items-center gap-2 mt-1">
+                <span className="bg-primary/20 px-2 py-1 rounded-full text-sm">{role}</span>
               </p>
-              <p className="text-white/90 flex items-center mt-1">
-                <span className="mr-1">📍</span>
-                {location}{distance ? `, ${distance} km` : ""}
+              <p className="flex items-center gap-2 mt-2 text-sm opacity-80">
+                <MapPin className="h-4 w-4" />
+                {location}
+                {distance && <span className="opacity-60">• {distance} km</span>}
               </p>
-              <p className="text-white/90 flex items-center mt-1">
-                <span className="mr-1">💰</span>
-                {priceRange}
-              </p>
+              <p className="mt-2 text-lg font-semibold">{priceRange}</p>
             </div>
-            
-            <Link href={`/artist/${id}`}>
-              <a>
-                <Button className="bg-white text-primary hover:bg-gray-100 h-10 w-10 rounded-full p-0">
+
+            {/* Action Buttons */}
+            <div className="flex justify-between items-center pt-4">
+              <Button
+                variant="outline"
+                size="icon"
+                className={cn(
+                  "bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-all duration-300",
+                  isLiked && "bg-red-500/50 hover:bg-red-500/60"
+                )}
+                onClick={handleLike}
+                disabled={isLoading}
+              >
+                <Heart className={cn("h-5 w-5", isLiked && "fill-current")} />
+              </Button>
+
+              <Button
+                className="bg-primary hover:bg-primary/90 text-white px-6"
+                onClick={handleOffer}
+                disabled={isLoading}
+              >
+                <Send className="h-4 w-4 mr-2" />
+                Ofertar
+              </Button>
+
+              <Link href={`/artist/${id}`}>
+                <Button
+                  variant="outline"
+                  className="bg-white/10 backdrop-blur-sm hover:bg-white/20"
+                >
                   <Info className="h-5 w-5" />
                 </Button>
-              </a>
-            </Link>
+              </Link>
+            </div>
           </div>
-        </div>
-        
-        {/* Action Buttons */}
-        <div className="absolute bottom-0 left-0 right-0 p-6 flex justify-center space-x-4 mb-4 pt-20">
-          <Button
-            variant="outline"
-            size="icon"
-            className="bg-white h-14 w-14 rounded-full"
-            onClick={handleDislike}
-          >
-            <X className="h-6 w-6 text-red-500" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            className="bg-white h-14 w-14 rounded-full"
-            onClick={handleLike}
-          >
-            <ThumbsUp className="h-6 w-6 text-green-500" />
-          </Button>
         </div>
       </div>
     </Card>
