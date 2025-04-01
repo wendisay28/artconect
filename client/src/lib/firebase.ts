@@ -4,21 +4,13 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
-const firebaseApiKey = import.meta.env.VITE_FIREBASE_API_KEY;
-const firebaseProjectId = import.meta.env.VITE_FIREBASE_PROJECT_ID;
-const firebaseAppId = import.meta.env.VITE_FIREBASE_APP_ID;
-
-if (!firebaseApiKey || !firebaseProjectId || !firebaseAppId) {
-  throw new Error("Firebase environment variables are missing");
-}
-
 const firebaseConfig = {
-  apiKey: firebaseApiKey,
-  authDomain: `${firebaseProjectId}.firebaseapp.com`,
-  projectId: firebaseProjectId,
-  storageBucket: `${firebaseProjectId}.appspot.com`,
+  apiKey: "AIzaSyCBoZP34puZLNgXOd12g67pCStZ5XA_7ok",
+  authDomain: "buscart-e1beb.firebaseapp.com",
+  projectId: "buscart-e1beb",
+  storageBucket: "buscart-e1beb.firebasestorage.app",
   messagingSenderId: "288663409318",
-  appId: firebaseAppId,
+  appId: "1:288663409318:web:b0ed9915b80765a5519a67",
   measurementId: "G-75JBY8VWKL"
 };
 
