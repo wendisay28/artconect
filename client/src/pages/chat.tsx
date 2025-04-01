@@ -75,13 +75,6 @@ export default function ChatPage() {
     throwOnError: false,
   });
 
-  // Get chat details (including the other user)
-  const { data: chatDetails } = useQuery({
-    queryKey: ['/api/chats', id],
-    enabled: !!id && !!user,
-    throwOnError: false,
-  });
-
   // Get artist details if coming from artist profile
   const { data: artistDetails } = useQuery({
     queryKey: ['/api/artists', artistId],
