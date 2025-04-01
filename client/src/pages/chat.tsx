@@ -36,12 +36,20 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  // Get chat details
+  // Get chat details and messages
   const { data: chatDetails } = useQuery({
     queryKey: ['/api/chats', id],
     enabled: !!id && !!user,
     throwOnError: false,
   });
+
+  const { data: messages, isLoading: isLoadingMessages } = useQuery({
+    queryKey: ['/api/chats', id, 'messages'],
+    enabled: !!id && !!user,
+    throwOnError: false,
+  });
+
+  const otherUser = chatDetails?.participants?.find(p => p.id !== user?.uid);
 
   // Initialize WebSocket
   const { 
@@ -52,26 +60,11 @@ export default function ChatPage() {
     connect: connectWs
   } = useWebSocket();
 
-  // Get other user details for the chat
-  const otherUser = chatDetails ? (() => {
-    const otherUserId = chatDetails.user1Id === user?.uid 
-      ? chatDetails.user2Id 
-      : chatDetails.user1Id;
-
-    return chatDetails.participants?.find(p => p.id === otherUserId);
-  })() : null;
 
   // Get all chats for the current user
   const { data: chats, isLoading: isLoadingChats } = useQuery({
     queryKey: ['/api/chats'],
     enabled: !!user,
-    throwOnError: false,
-  });
-
-  // Get messages for a specific chat
-  const { data: messages, isLoading: isLoadingMessages } = useQuery({
-    queryKey: ['/api/chats', id, 'messages'],
-    enabled: !!id && !!user,
     throwOnError: false,
   });
 
