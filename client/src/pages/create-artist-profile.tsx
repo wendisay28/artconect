@@ -31,8 +31,16 @@ export default function CreateArtistProfile() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const auth = await import('firebase/auth');
+      const currentUser = auth.getAuth().currentUser;
+      
+      if (!currentUser) {
+        throw new Error('Must be logged in to create artist profile');
+      }
+
       await apiRequest('POST', '/api/artists', {
         ...formData,
+        userId: currentUser.uid,
         minPrice: parseInt(formData.minPrice),
         maxPrice: parseInt(formData.maxPrice)
       });

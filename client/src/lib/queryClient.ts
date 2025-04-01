@@ -16,22 +16,22 @@ export async function apiRequest(
     ...(data && { "Content-Type": "application/json" }),
   };
 
-  // Obtener el token del usuario autenticado with error handling for token refresh
   const auth = await import('firebase/auth');
-  const { getAuth, onAuthStateChanged } = auth;
+  const { getAuth } = auth;
   const currentUser = getAuth().currentUser;
-  let token: string | null = null;
+
+  if (!currentUser && url.includes('/api/favorites')) {
+    throw new Error('Must be logged in to access favorites');
+  }
 
   if (currentUser) {
     try {
-      token = await currentUser.getIdToken(true); // true for force refresh
+      const token = await currentUser.getIdToken(true);
       headers['Authorization'] = `Bearer ${token}`;
     } catch (error) {
       console.error("Error refreshing token:", error);
-      // Handle token refresh error (e.g., re-authentication, logout)
-      // For simplicity, logging the error for now.  A more robust solution would be needed in production
+      throw new Error('Authentication failed. Please log in again.');
     }
-
   }
 
 
