@@ -35,6 +35,13 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
+  // Get chat details
+  const { data: chatDetails } = useQuery({
+    queryKey: ['/api/chats', id],
+    enabled: !!id && !!user,
+    throwOnError: false,
+  });
+
   // Initialize WebSocket
   const { 
     status: wsStatus, 
