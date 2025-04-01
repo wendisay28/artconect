@@ -1,54 +1,59 @@
-import { Artist, InsertArtist, Service, Event, User, InsertUser, InsertService, InsertEvent, 
+import { Artist, InsertArtist, Service, Event, User, InsertUser, InsertService, InsertEvent,
          Favorite, InsertFavorite, Chat, Message, InsertMessage, Product, InsertProduct,
          ServiceRequest } from "@shared/schema";
 import { getFirestore } from "firebase/firestore";
 import { getStorage as getFirebaseStorage } from "firebase/storage";
 import { initializeApp } from "firebase/app";
+import { db } from './db';
+import { Timestamp } from 'firebase-admin/firestore';
 
 // Initialize Firebase (replace with your config)
 const firebaseConfig = {
   // Your Firebase config here
 };
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+const dbFirebase = getFirestore(app); // Keep this for potential future use
 const firebaseStorage = getFirebaseStorage(app);
 
 
 export class Storage {
-  async getAllUsers() {
+  async getAllUsers(): Promise<User[]> {
     const snapshot = await db.collection('users').get();
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
   }
 
-  async getUser(id: string) {
+  async getUser(id: string): Promise<User | undefined> {
     const doc = await db.collection('users').doc(id).get();
-    return doc.exists ? { id: doc.id, ...doc.data() } : undefined;
+    return doc.exists ? { id: doc.id, ...doc.data() } as User : undefined;
   }
 
-  async getUserByFirebaseUid(uid: string) {
+  async getUserByFirebaseUid(uid: string): Promise<User | undefined> {
     const snapshot = await db.collection('users')
       .where('firebaseUid', '==', uid)
       .limit(1)
       .get();
-    return snapshot.empty ? undefined : { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+    return snapshot.empty ? undefined : { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as User;
   }
 
-  async createUser(user: any) {
-    const docRef = await db.collection('users').add(user);
-    return { id: docRef.id, ...user };
+  async createUser(userData: Omit<User, 'id' | 'createdAt'>): Promise<User> {
+    const docRef = await db.collection('users').add({
+      ...userData,
+      createdAt: Timestamp.now()
+    });
+    const doc = await docRef.get();
+    return { id: doc.id, ...doc.data() } as User;
   }
 
-  async updateUser(firebaseUid: string, userData: any) {
-    const userRef = db.collection('users').doc(firebaseUid);
-    await userRef.update(userData);
-    const updated = await userRef.get();
-    return { id: updated.id, ...updated.data() };
+  async updateUser(id: string, userData: Partial<User>): Promise<User> {
+    const docRef = db.collection('users').doc(id);
+    await docRef.update(userData);
+    const doc = await docRef.get();
+    return { id: doc.id, ...doc.data() } as User;
   }
 
-  async deleteUser(firebaseUid: string) {
-    await db.collection('users').doc(firebaseUid).delete();
+  async deleteUser(id: string): Promise<void> {
+    await db.collection('users').doc(id).delete();
   }
-
 
   // Artistas - Retaining mock data functionality for now
   async getAllArtists(): Promise<Artist[]> { return []; }
@@ -69,21 +74,55 @@ export class Storage {
   // Services - Retaining mock data functionality for now
   async createService(service: InsertService): Promise<Service> { return {} as Service; }
 
-  // Events - Retaining mock data functionality for now
-  async getAllEvents(): Promise<Event[]> { return []; }
-  async getEvent(id: number): Promise<Event | undefined> { return undefined; }
+  // Events
+  async getAllEvents(): Promise<Event[]> {
+    const snapshot = await db.collection('events').get();
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Event));
+  }
+
+  async getEvent(id: string): Promise<Event | undefined> {
+    const doc = await db.collection('events').doc(id).get();
+    return doc.exists ? { id: doc.id, ...doc.data() } as Event : undefined;
+  }
+
+  async createEvent(eventData: Omit<Event, 'id' | 'createdAt'>): Promise<Event> {
+    const docRef = await db.collection('events').add({
+      ...eventData,
+      createdAt: Timestamp.now()
+    });
+    const doc = await docRef.get();
+    return { id: doc.id, ...doc.data() } as Event;
+  }
   async getFeaturedEvents(): Promise<any[]> { return []; }
   async getNearbyEvents(lat?: number, lng?: number): Promise<any[]> { return []; }
   async getEventsForExplorer(lat?: number, lng?: number): Promise<any[]> { return []; }
-  async createEvent(eventData: InsertEvent): Promise<Event> { return {} as Event; }
   async getEventAttendees(eventId: number): Promise<any[]> { return []; }
 
-  // Favorites - Retaining mock data functionality for now
+  // Favorites
+  async getFavorites(userId: string): Promise<Favorite[]> {
+    const snapshot = await db.collection('favorites')
+      .where('userId', '==', userId)
+      .get();
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Favorite));
+  }
+
+  async createFavorite(favoriteData: Omit<Favorite, 'id' | 'createdAt'>): Promise<Favorite> {
+    const docRef = await db.collection('favorites').add({
+      ...favoriteData,
+      createdAt: Timestamp.now()
+    });
+    const doc = await docRef.get();
+    return { id: doc.id, ...doc.data() } as Favorite;
+  }
+
+  async removeFavorite(id: string): Promise<void> {
+    await db.collection('favorites').doc(id).delete();
+  }
   async getFavoriteArtists(userId: number): Promise<any[]> { return []; }
   async getFavoriteEvents(userId: number): Promise<any[]> { return []; }
-  async createFavorite(favoriteData: InsertFavorite): Promise<Favorite> { return {} as Favorite; }
   async removeFavoriteArtist(userId: number, artistId: number): Promise<void> { return; }
   async removeFavoriteEvent(userId: number, eventId: number): Promise<void> { return; }
+
 
   // Chats - Retaining mock data functionality for now
   async getUserChats(userId: number): Promise<any[]> { return []; }
