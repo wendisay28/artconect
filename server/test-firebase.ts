@@ -2,42 +2,40 @@
 import { db } from './db';
 
 async function testFirebaseConnection() {
-  console.log('🔄 Iniciando prueba de conexión a Firebase...');
-  
   try {
-    console.log('📝 Intentando crear una colección de prueba...');
+    console.log('🔄 Iniciando prueba de conexión a Firebase...');
+    
+    // Intentar crear una colección de prueba
     const testCollection = db.collection('test');
     
-    console.log('📤 Intentando escribir un documento...');
+    // Crear un documento de prueba
     const testDoc = await testCollection.add({
       message: 'Test connection',
       timestamp: new Date(),
       test: true
     });
-    console.log('✅ Documento creado exitosamente con ID:', testDoc.id);
-
-    console.log('📥 Intentando leer el documento...');
+    
+    console.log('✅ Documento creado con ID:', testDoc.id);
+    
+    // Leer el documento
     const doc = await testDoc.get();
-    if (doc.exists) {
-      console.log('✅ Documento leído exitosamente:', doc.data());
-    } else {
-      console.error('❌ El documento no existe después de crearlo');
-    }
-
-    console.log('🗑️ Limpiando - eliminando documento de prueba...');
+    console.log('📄 Datos del documento:', doc.data());
+    
+    // Eliminar el documento de prueba
     await testDoc.delete();
-    console.log('✅ Documento eliminado exitosamente');
-
-    console.log('🎉 Todas las pruebas completadas con éxito');
-    return true;
+    console.log('🗑️ Documento eliminado');
+    
+    console.log('✅ Prueba completada exitosamente');
   } catch (error) {
-    console.error('❌ Error detallado:', error);
-    if (error instanceof Error) {
-      console.error('Mensaje de error:', error.message);
-      console.error('Stack trace:', error.stack);
-    }
-    return false;
+    console.error('❌ Error en la prueba:', error);
+    throw error;
   }
 }
 
-testFirebaseConnection();
+// Ejecutar la prueba
+testFirebaseConnection()
+  .then(() => console.log('✅ Test finalizado'))
+  .catch((error) => {
+    console.error('❌ Test fallido:', error);
+    process.exit(1);
+  });
