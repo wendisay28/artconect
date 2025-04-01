@@ -1,5 +1,5 @@
 
-import { db } from './db';
+const { db } = require('./db');
 
 async function testFirebaseConnection() {
   console.log('🔄 Iniciando prueba de conexión a Firebase...');
@@ -40,5 +40,4 @@ async function testFirebaseConnection() {
   }
 }
 
-// Ejecutar prueba
 testFirebaseConnection();
