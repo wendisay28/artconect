@@ -103,11 +103,18 @@ export default function HomePage() {
   };
 
   // Inicializar los arrays para evitar errores de undefined
-  const safeEvents = featuredEvents || [];
-  const safeArtists = recommendedArtists || [];
-  const safeNearbyEvents = nearbyEvents || [];
-  const safeBlogPosts = blogPosts || [];
-  const safeProducts = products || [];
+  const PLACEHOLDER_IMAGES = {
+  event: "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=800&auto=format",
+  artist: "https://images.unsplash.com/photo-1511735111819-9a3f7709049c?w=800&auto=format",
+  blog: "https://images.unsplash.com/photo-1505673542670-a5e3ff5b14a3?w=800&auto=format",
+  product: "https://images.unsplash.com/photo-1556449895-a33c9dba33dd?w=800&auto=format"
+};
+
+const safeEvents = featuredEvents || [];
+const safeArtists = recommendedArtists || [];
+const safeNearbyEvents = nearbyEvents || [];
+const safeBlogPosts = blogPosts || [];
+const safeProducts = products || [];
 
   return (
     <div className="container mx-auto px-4 py-6">

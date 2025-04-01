@@ -3,6 +3,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from "@/lib/utils";
+import { Check, CheckCheck, FileIcon, Download } from 'lucide-react';
+import { Button } from "@/components/ui/button";
 
 interface ChatMessageProps {
   id: string;
@@ -13,6 +15,7 @@ interface ChatMessageProps {
   timestamp: Date;
   isCurrentUser: boolean;
   status?: 'sending' | 'sent' | 'delivered' | 'read' | 'error';
+  file?: {name: string; size: string; url: string};
 }
 
 export function ChatMessage({
@@ -23,7 +26,8 @@ export function ChatMessage({
   content,
   timestamp,
   isCurrentUser,
-  status = 'sent'
+  status = 'sent',
+  file
 }: ChatMessageProps) {
   const [timeAgo, setTimeAgo] = useState<string>(
     formatDistanceToNow(timestamp, { addSuffix: true, locale: es })
@@ -51,7 +55,7 @@ export function ChatMessage({
   // Status icon or text
   const renderStatus = () => {
     if (!isCurrentUser) return null;
-    
+
     switch (status) {
       case 'sending':
         return <span className="text-xs text-muted-foreground">Enviando...</span>;
@@ -89,18 +93,19 @@ export function ChatMessage({
         {!isCurrentUser && (
           <div className="text-xs text-muted-foreground mb-1">{senderName}</div>
         )}
-        
+
         <div
           className={cn(
             "rounded-lg p-3",
-            isCurrentUser 
-              ? "bg-primary text-primary-foreground" 
+            isCurrentUser
+              ? "bg-primary text-primary-foreground"
               : "bg-muted"
           )}
         >
           {content}
+          {file && <FileAttachment name={file.name} size={file.size} url={file.url}/>}
         </div>
-        
+
         <div className="flex mt-1 text-xs text-muted-foreground justify-between">
           <span>{timeAgo}</span>
           {renderStatus()}
@@ -112,22 +117,40 @@ export function ChatMessage({
 
 export function ChatTypingIndicator({ name }: { name: string }) {
   return (
-    <div className="flex items-center gap-2 mb-4">
-      <Avatar className="h-8 w-8">
-        <AvatarFallback>{name.substring(0, 2).toUpperCase()}</AvatarFallback>
-      </Avatar>
-      
-      <div className="bg-muted p-3 rounded-lg">
-        <div className="flex space-x-1">
-          <div className="w-2 h-2 rounded-full bg-current animate-bounce" style={{ animationDelay: '0s' }} />
-          <div className="w-2 h-2 rounded-full bg-current animate-bounce" style={{ animationDelay: '0.2s' }} />
-          <div className="w-2 h-2 rounded-full bg-current animate-bounce" style={{ animationDelay: '0.4s' }} />
-        </div>
+    <div className="flex items-center space-x-2 text-muted-foreground text-sm">
+      <span>{name} está escribiendo</span>
+      <div className="flex space-x-1">
+        <div className="w-1.5 h-1.5 bg-current rounded-full animate-bounce" />
+        <div className="w-1.5 h-1.5 bg-current rounded-full animate-bounce delay-100" />
+        <div className="w-1.5 h-1.5 bg-current rounded-full animate-bounce delay-200" />
       </div>
-      
-      <div className="text-xs text-muted-foreground">
-        {name} está escribiendo...
+    </div>
+  );
+}
+
+export function MessageStatus({ status }: { status: 'sent' | 'delivered' | 'read' }) {
+  return (
+    <div className="flex items-center space-x-1 text-xs">
+      {status === 'sent' && <Check className="h-3 w-3 text-muted-foreground" />}
+      {status === 'delivered' && <CheckCheck className="h-3 w-3 text-muted-foreground" />}
+      {status === 'read' && <CheckCheck className="h-3 w-3 text-primary" />}
+    </div>
+  );
+}
+
+export function FileAttachment({ name, size, url }: { name: string; size: string; url: string }) {
+  return (
+    <div className="flex items-center space-x-2 p-2 rounded-md bg-accent/50">
+      <FileIcon className="h-4 w-4" />
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium truncate">{name}</p>
+        <p className="text-xs text-muted-foreground">{size}</p>
       </div>
+      <Button variant="ghost" size="icon" asChild>
+        <a href={url} download>
+          <Download className="h-4 w-4" />
+        </a>
+      </Button>
     </div>
   );
 }

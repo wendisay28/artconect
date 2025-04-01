@@ -26,14 +26,15 @@ export default function ChatPage() {
   const [searchParams] = useLocation();
   const params = new URLSearchParams(searchParams);
   const artistId = params.get("artistId");
-  
+
   const { user } = useAuth();
   const { toast } = useToast();
   const [message, setMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [localMessages, setLocalMessages] = useState<any[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
   // Initialize WebSocket
   const { 
     status: wsStatus, 
@@ -42,41 +43,41 @@ export default function ChatPage() {
     updateUserStatus,
     connect: connectWs
   } = useWebSocket();
-  
+
   // Get other user details for the chat
   const getOtherUser = () => {
     if (!chatDetails) return null;
-    
+
     const otherUserId = chatDetails.user1Id === user?.uid 
       ? chatDetails.user2Id 
       : chatDetails.user1Id;
-    
+
     return chatDetails.participants?.find(p => p.id === otherUserId);
   };
 
   const otherUser = getOtherUser();
-  
+
   // Get all chats for the current user
   const { data: chats, isLoading: isLoadingChats } = useQuery({
     queryKey: ['/api/chats'],
     enabled: !!user,
     throwOnError: false,
   });
-  
+
   // Get messages for a specific chat
   const { data: messages, isLoading: isLoadingMessages } = useQuery({
     queryKey: ['/api/chats', id, 'messages'],
     enabled: !!id && !!user,
     throwOnError: false,
   });
-  
+
   // Get chat details (including the other user)
   const { data: chatDetails } = useQuery({
     queryKey: ['/api/chats', id],
     enabled: !!id && !!user,
     throwOnError: false,
   });
-  
+
   // Get artist details if coming from artist profile
   const { data: artistDetails } = useQuery({
     queryKey: ['/api/artists', artistId],
@@ -114,7 +115,7 @@ export default function ChatPage() {
 
   // Send a message
   const sendMessageMutation = useMutation({
-    mutationFn: async (content: string) => {
+    mutationFn: async (content: string | File) => {
       if (!user || !id) return null;
       const response = await apiRequest("POST", `/api/chats/${id}/messages`, {
         senderId: user.uid,
@@ -124,6 +125,7 @@ export default function ChatPage() {
     },
     onSuccess: () => {
       setMessage("");
+      setSelectedFile(null);
       // Invalidate messages query
       queryClient.invalidateQueries({ queryKey: ['/api/chats', id, 'messages'] });
     },
@@ -151,7 +153,7 @@ export default function ChatPage() {
       msg.type === 'chat_message' && 
       msg.payload.chatId === Number(id)
     );
-    
+
     if (newWsMessages.length > 0) {
       // Add new real-time messages to the local state
       const chatMessages = newWsMessages.map(msg => {
@@ -164,9 +166,9 @@ export default function ChatPage() {
           status: 'sent'
         };
       });
-      
+
       setLocalMessages(prev => [...prev, ...chatMessages]);
-      
+
       // Invalidate the messages query to fetch from server
       queryClient.invalidateQueries({ queryKey: ['/api/chats', id, 'messages'] });
     }
@@ -177,7 +179,7 @@ export default function ChatPage() {
     if (user && wsStatus === 'open' && id) {
       // Set status to online when joining chat
       updateUserStatus(Number(user.uid), 'online');
-      
+
       // Set status to offline when leaving chat
       return () => {
         updateUserStatus(Number(user.uid), 'offline');
@@ -202,43 +204,50 @@ export default function ChatPage() {
   // Handle typing indicator
   useEffect(() => {
     let typingTimer: NodeJS.Timeout;
-    
+
     if (message && message.length > 0 && !isTyping && user && id && otherUser) {
       setIsTyping(true);
-      
+
       // Reset typing status after 3 seconds of inactivity
       typingTimer = setTimeout(() => {
         setIsTyping(false);
       }, 3000);
     }
-    
+
     return () => {
       clearTimeout(typingTimer);
     };
   }, [message, isTyping, user, id, otherUser]);
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+    }
+  };
+
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!message.trim() || !id || !user) return;
-    
+    if ((!message.trim() && !selectedFile) || !id || !user) return;
+
     // Add the message to local state immediately for responsive UI
     const tempMessage = {
       id: `temp-${Date.now()}`,
       senderId: user.uid,
-      content: message,
+      content: message || selectedFile,
       createdAt: new Date().toISOString(),
       status: 'sending' as const
     };
-    
+
     setLocalMessages(prev => [...prev, tempMessage]);
-    
+
     // Send via WebSocket for real-time updates
     if (wsStatus === 'open') {
-      sendChatMessage(Number(id), Number(user.uid), message);
+      sendChatMessage(Number(id), Number(user.uid), message || selectedFile);
     }
-    
+
     // Also send via API for persistence
-    sendMessageMutation.mutate(message);
+    sendMessageMutation.mutate(message || selectedFile);
   };
 
   // If no chat is selected, show the chat list
@@ -259,7 +268,7 @@ export default function ChatPage() {
             chats.map(chat => {
               const otherParticipant = chat.participants.find(p => p.id !== user?.uid);
               const lastMessage = chat.lastMessage;
-              
+
               return (
                 <a href={`/chat/${chat.id}`} key={chat.id}>
                   <Card className="hover:bg-accent/10 transition-colors">
@@ -326,7 +335,7 @@ export default function ChatPage() {
             <Skeleton className="h-10 w-40" />
           )}
         </div>
-        
+
         <div className="flex items-center">
           <Button variant="ghost" size="icon" className="text-muted-foreground" disabled>
             <Phone className="h-5 w-5" />
@@ -353,7 +362,7 @@ export default function ChatPage() {
           </DropdownMenu>
         </div>
       </header>
-      
+
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto p-4">
         {isLoadingMessages ? (
@@ -377,7 +386,7 @@ export default function ChatPage() {
                   const senderAvatar = isSentByMe 
                     ? user?.photoURL 
                     : otherUser?.photoURL;
-                    
+
                   return (
                     <ChatMessage
                       key={msg.id}
@@ -403,7 +412,7 @@ export default function ChatPage() {
                 </div>
               </div>
             ) : null}
-            
+
             {/* Local temporary messages (from WebSocket or pending) */}
             {localMessages.length > 0 && (
               <div className="space-y-1">
@@ -425,7 +434,7 @@ export default function ChatPage() {
                 })}
               </div>
             )}
-            
+
             {/* Typing indicator */}
             {isTyping && otherUser && (
               <ChatTypingIndicator name={otherUser.displayName} />
@@ -434,9 +443,10 @@ export default function ChatPage() {
         )}
         <div ref={messagesEndRef} />
       </div>
-      
+
       {/* Message input */}
       <form onSubmit={handleSendMessage} className="p-4 border-t flex items-center">
+        <input type="file" onChange={handleFileSelect} />
         <Input 
           placeholder="Escribe un mensaje..." 
           value={message} 
@@ -446,7 +456,7 @@ export default function ChatPage() {
         <Button 
           type="submit" 
           size="icon"
-          disabled={!message.trim() || sendMessageMutation.isPending}
+          disabled={(!message.trim() && !selectedFile) || sendMessageMutation.isPending}
         >
           <Send className="h-5 w-5" />
         </Button>
