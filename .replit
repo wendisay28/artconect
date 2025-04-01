@@ -60,10 +60,6 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "kill-port 5000"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
 args = "npm install"
 
 [[workflows.workflow.tasks]]
