@@ -1,11 +1,19 @@
-import { useState, useEffect } from 'react';
+
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Image, File, Send, Check, CheckCheck } from 'lucide-react';
+import { Check, CheckCheck } from 'lucide-react';
 
+interface ChatMessageProps {
+  id: string;
+  senderId: number;
+  senderName: string;
+  senderAvatar?: string;
+  content: string | File;
+  timestamp: Date;
+  isCurrentUser: boolean;
+  status?: 'sending' | 'sent' | 'delivered' | 'read';
+}
 
 export function ChatTypingIndicator({ name }: { name: string }) {
   return (
@@ -21,39 +29,46 @@ export function ChatTypingIndicator({ name }: { name: string }) {
 }
 
 export default function ChatMessage({ 
-  message,
-  isOwnMessage,
-  sender,
-  timestamp
-}: {
-  message: string;
-  isOwnMessage: boolean;
-  sender: { name: string; photoURL?: string };
-  timestamp: Date;
-}) {
+  id,
+  senderId,
+  senderName,
+  senderAvatar,
+  content,
+  timestamp,
+  isCurrentUser,
+  status = 'sent'
+}: ChatMessageProps) {
+  const statusIcon = {
+    sending: null,
+    sent: <Check className="h-4 w-4" />,
+    delivered: <CheckCheck className="h-4 w-4" />,
+    read: <CheckCheck className="h-4 w-4 text-blue-500" />
+  };
+
   return (
     <div className={cn(
       "flex items-start gap-2 mb-4",
-      isOwnMessage && "flex-row-reverse"
+      isCurrentUser && "flex-row-reverse"
     )}>
       <Avatar className="w-8 h-8">
-        <AvatarImage src={sender.photoURL} />
-        <AvatarFallback>{sender.name[0]}</AvatarFallback>
+        <AvatarImage src={senderAvatar} />
+        <AvatarFallback>{senderName[0]}</AvatarFallback>
       </Avatar>
 
       <div className={cn(
         "flex flex-col max-w-[70%]",
-        isOwnMessage && "items-end"
+        isCurrentUser && "items-end"
       )}>
         <div className={cn(
           "rounded-lg px-3 py-2",
-          isOwnMessage ? "bg-primary text-primary-foreground" : "bg-muted"
+          isCurrentUser ? "bg-primary text-primary-foreground" : "bg-muted"
         )}>
-          {message}
+          {content instanceof File ? content.name : content}
         </div>
-        <span className="text-xs text-muted-foreground mt-1">
+        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
           {format(timestamp, 'HH:mm')}
-        </span>
+          {isCurrentUser && statusIcon[status]}
+        </div>
       </div>
     </div>
   );
