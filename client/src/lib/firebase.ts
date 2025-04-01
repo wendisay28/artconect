@@ -14,6 +14,11 @@ const firebaseConfig = {
   measurementId: "G-75JBY8VWKL"
 };
 
+// Configurar dominios autorizados para desarrollo
+if (window.location.hostname.includes('replit.dev')) {
+  firebaseConfig.authDomain = window.location.hostname;
+}
+
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
