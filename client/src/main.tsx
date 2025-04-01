@@ -6,13 +6,29 @@ import { queryClient } from "./lib/queryClient";
 import App from "./App";
 import "./index.css";
 
-const rootElement = document.getElementById("root");
-if (!rootElement) throw new Error("Failed to find root element");
+const mount = () => {
+  const rootElement = document.getElementById("root");
+  if (!rootElement) {
+    console.error("No se encontró el elemento root");
+    return;
+  }
 
-createRoot(rootElement).render(
-  <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <App />
-    </QueryClientProvider>
-  </StrictMode>
-);
+  createRoot(rootElement).render(
+    <StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <App />
+      </QueryClientProvider>
+    </StrictMode>
+  );
+};
+
+// Intentar montar inmediatamente
+mount();
+
+// Recargar si hay errores de conexión
+window.addEventListener('load', () => {
+  if (!document.getElementById("root")?.children.length) {
+    console.log("Reintentando montar la aplicación...");
+    mount();
+  }
+});

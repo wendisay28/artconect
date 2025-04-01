@@ -3,18 +3,14 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
 
-// Middleware para logging
+// Middlewares básicos
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Logging middleware simplificado
 app.use((req, res, next) => {
-  const start = Date.now();
-  res.on("finish", () => {
-    const duration = Date.now() - start;
-    if (req.path.startsWith("/api")) {
-      log(`${req.method} ${req.path} ${res.statusCode} in ${duration}ms`);
-    }
-  });
+  log(`${req.method} ${req.path}`);
   next();
 });
 
@@ -22,51 +18,27 @@ app.use((req, res, next) => {
   try {
     const server = await registerRoutes(app);
 
-    // Error handling middleware
+    // Manejo de errores
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
       console.error('Error:', err);
-      const status = err.status || err.statusCode || 500;
-      const message = err.message || "Internal Server Error";
-      res.status(status).json({ message });
+      res.status(500).json({ message: "Internal Server Error" });
     });
 
+    // Setup de Vite o servir estáticos
     if (process.env.NODE_ENV === "development") {
       await setupVite(app, server);
     } else {
       serveStatic(app);
     }
 
-    const port = parseInt(process.env.PORT || "5000");
-    const host = '0.0.0.0';
-
-    try {
-      await new Promise((resolve, reject) => {
-        server.listen(port, host)
-          .once('listening', () => {
-            log(`🚀 Server running at http://${host}:${port}`);
-            resolve(true);
-          })
-          .once('error', (err) => {
-            if (err.code === 'EADDRINUSE') {
-              log(`Puerto ${port} ocupado, intentando en puerto ${port + 1}`);
-              server.listen(port + 1, host)
-                .once('listening', () => {
-                  log(`🚀 Servidor ejecutándose en puerto ${port + 1}`);
-                  resolve(true);
-                })
-                .once('error', reject);
-            } else {
-              reject(err);
-            }
-          });
-      });
-    } catch (err) {
-      console.error('Error fatal al iniciar el servidor:', err);
-      process.exit(1);
-    }
+    // Configuración del puerto
+    const port = 5000;
+    server.listen(port, '0.0.0.0', () => {
+      log(`🚀 Servidor ejecutándose en http://0.0.0.0:${port}`);
+    });
 
   } catch (err) {
-    console.error('Fatal server error:', err);
+    console.error('Error fatal:', err);
     process.exit(1);
   }
 })();
