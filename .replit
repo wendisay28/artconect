@@ -7,7 +7,8 @@ channel = "stable-24_05"
 
 [deployment]
 deploymentTarget = "autoscale"
-run = ["sh", "-c", "npm run dev"]
+run = ["sh", "-c", "NODE_ENV=production node dist/index.js"]
+build = ["sh", "-c", "npm install && npm run build"]
 
 [[ports]]
 localPort = 5000
@@ -18,7 +19,7 @@ localPort = 5001
 externalPort = 3000
 
 [workflows]
-runButton = "Start Dev Server"
+runButton = "Dev Server New"
 
 [[workflows.workflow]]
 name = "Project"
@@ -87,3 +88,16 @@ args = "npm install"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npx ts-node --esm server/test-firebase.ts"
+
+[[workflows.workflow]]
+name = "Dev Server New"
+author = 41061689
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm install"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "NODE_ENV=development tsx server/index.ts"
