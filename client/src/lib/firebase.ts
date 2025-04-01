@@ -23,7 +23,9 @@ const currentDomain = window.location.hostname;
 const firebaseConfig = {
   apiKey: firebaseApiKey || "",
   // Usamos el dominio actual de Replit para desarrollo y el dominio de Firebase para producción
-  authDomain: currentDomain.includes('replit') ? currentDomain : `${firebaseProjectId || ""}.firebaseapp.com`,
+  authDomain: `${firebaseProjectId || ""}.firebaseapp.com`,
+  // Para desarrollo local en Replit
+  authEmulator: currentDomain.includes('replit') ? `https://${currentDomain}` : undefined,
   projectId: firebaseProjectId || "",
   storageBucket: `${firebaseProjectId || ""}.appspot.com`,
   appId: firebaseAppId || "",
@@ -34,13 +36,16 @@ const firebaseConfig = {
 let app, auth, db, storage;
 
 try {
-  if (hasRequiredEnvVars) {
-    app = initializeApp(firebaseConfig);
-    auth = getAuth(app);
-    db = getFirestore(app);
-    storage = getStorage(app);
-    console.log("Firebase initialized successfully");
-  } else {
+  if (!hasRequiredEnvVars) {
+    throw new Error("Firebase configuration is incomplete. Check your environment variables.");
+  }
+  app = initializeApp(firebaseConfig);
+  auth = getAuth(app);
+  db = getFirestore(app);
+  storage = getStorage(app);
+  console.log("Firebase initialized successfully with config:", 
+    { projectId: firebaseConfig.projectId, authDomain: firebaseConfig.authDomain });
+} else {
     console.warn("Firebase configuration is incomplete. Some features may not work.");
     
     // Crear objetos simulados para desarrollo
