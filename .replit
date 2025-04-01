@@ -69,4 +69,4 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "ts-node server/test-firebase.ts"
+args = "node --loader ts-node/esm server/test-firebase.ts"
