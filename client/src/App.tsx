@@ -15,6 +15,7 @@ import NotFound from "@/pages/not-found";
 import BottomNavigation from "./components/bottom-navigation";
 
 function App() {
+  console.log("Dominio actual:", window.location.hostname);
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
