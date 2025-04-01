@@ -121,7 +121,7 @@ export const storage = {
     return { id: doc.id, ...doc.data() };
   },
 
-  // Otros métodos
+  // Favorites
   async getFavorites(userId: string) {
     const snapshot = await db.collection('favorites')
       .where('userId', '==', userId)
