@@ -1,5 +1,5 @@
 
-import { db } from './db.js';
+import { db } from './db';
 
 async function testFirebaseConnection() {
   console.log('🔄 Iniciando prueba de conexión a Firebase...');

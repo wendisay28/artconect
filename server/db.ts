@@ -20,3 +20,4 @@ try {
 }
 
 export { db };
+export default db;

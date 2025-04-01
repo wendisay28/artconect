@@ -70,3 +70,16 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "node --loader ts-node/esm server/test-firebase.ts"
+
+[[workflows.workflow]]
+name = "Test Firebase Connection"
+author = 41041348
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm install"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npx ts-node --esm server/test-firebase.ts"
