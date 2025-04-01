@@ -62,23 +62,25 @@ app.use((req, res, next) => {
   const port = process.env.PORT || 5000;
   const host = '0.0.0.0';
 
-  server.listen({
-    port,
-    host,
-  }).then(() => {
-    log(`🚀 Server running at http://${host}:${port}`);
-  }).catch((err: any) => {
-    if (err.code === 'EADDRINUSE') {
-      log(`Port ${port} is busy, trying ${port + 1}`);
-      server.listen({
-        port: port + 1,
-        host: "0.0.0.0",
-        reusePort: true,
-      }).then(() => {
-          log(`serving on port ${port + 1}`);
-      }).catch((err: any) => {
-          log('Server error:', err);
+  try {
+    await new Promise((resolve, reject) => {
+      server.listen(port, host, () => {
+        log(`🚀 Server running at http://${host}:${port}`);
+        resolve(true);
+      }).on('error', (err: any) => {
+        if (err.code === 'EADDRINUSE') {
+          log(`Port ${port} is busy, trying ${port + 1}`);
+          server.listen(port + 1, host, () => {
+            log(`serving on port ${port + 1}`);
+            resolve(true);
+          }).on('error', reject);
+        } else {
+          reject(err);
+        }
       });
-    }
-  });
+    });
+  } catch (err) {
+    log('Fatal server error:', err);
+    process.exit(1);
+  }
 })();
