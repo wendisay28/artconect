@@ -1,8 +1,9 @@
 
-import { db } from './db';
-import { Timestamp } from 'firebase-admin/firestore';
+import { initializeApp, cert } from 'firebase-admin/app';
+import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { db } from './db.js';
 
-async function testFirebaseConnection() {
+const testFirebaseConnection = async () => {
   try {
     console.log('🔄 Iniciando prueba de conexión a Firebase...');
     
@@ -24,20 +25,11 @@ async function testFirebaseConnection() {
     console.log('🗑️ Documento eliminado');
     
     console.log('✅ Prueba completada exitosamente');
-    return true;
+    process.exit(0);
   } catch (error) {
     console.error('❌ Error en la prueba:', error);
-    throw error;
-  }
-}
-
-// Ejecutar la prueba
-testFirebaseConnection()
-  .then(() => {
-    console.log('✅ Test finalizado correctamente');
-    process.exit(0);
-  })
-  .catch((error) => {
-    console.error('❌ Test fallido:', error);
     process.exit(1);
-  });
+  }
+};
+
+testFirebaseConnection();
