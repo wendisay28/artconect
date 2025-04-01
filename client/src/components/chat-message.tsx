@@ -1,4 +1,3 @@
-
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -9,23 +8,10 @@ interface ChatMessageProps {
   senderId: number;
   senderName: string;
   senderAvatar?: string;
-  content: string | File;
+  content: string;
   timestamp: Date;
   isCurrentUser: boolean;
   status?: 'sending' | 'sent' | 'delivered' | 'read';
-}
-
-export function ChatTypingIndicator({ name }: { name: string }) {
-  return (
-    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-      <div className="typing-indicator">
-        <span></span>
-        <span></span>
-        <span></span>
-      </div>
-      {name} está escribiendo...
-    </div>
-  );
 }
 
 export default function ChatMessage({ 
@@ -63,7 +49,7 @@ export default function ChatMessage({
           "rounded-lg px-3 py-2",
           isCurrentUser ? "bg-primary text-primary-foreground" : "bg-muted"
         )}>
-          {content instanceof File ? content.name : content}
+          {content}
         </div>
         <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
           {format(timestamp, 'HH:mm')}
