@@ -65,9 +65,10 @@ export function useWebSocket() {
     setStatus('connecting');
 
     try {
-      const domain = 'bbc9a7fa-65ab-462c-b3a3-17647de2de12-00-120kijojwnr2t.kirk.replit.dev';
-      const protocol = 'wss:';
-      const wsUrl = `${protocol}//${domain}/ws`;
+      // Get the current hostname from window.location
+      const hostname = window.location.hostname;
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${hostname}/ws`;
       console.log('Attempting WebSocket connection to:', wsUrl);
 
       socket.current = new WebSocket(wsUrl);
