@@ -79,7 +79,11 @@ export default function AuthDialog({ onClose }: AuthDialogProps) {
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md" aria-describedby="auth-dialog-description">
+      <DialogContent 
+        className="sm:max-w-md" 
+        aria-labelledby="auth-dialog-title"
+        aria-describedby="auth-dialog-description"
+      >
         <DialogHeader>
           <DialogTitle className="text-center text-2xl font-bold" id="auth-dialog-title">
             {activeTab === "login" ? "Iniciar sesión" : "Crear cuenta"}

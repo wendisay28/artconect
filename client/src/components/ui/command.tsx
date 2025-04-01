@@ -26,7 +26,11 @@ interface CommandDialogProps extends DialogProps {}
 const CommandDialog = ({ children, ...props }: CommandDialogProps) => {
   return (
     <Dialog {...props}>
-      <DialogContent className="overflow-hidden p-0 shadow-lg" aria-describedby="command-dialog-description">
+      <DialogContent 
+        className="overflow-hidden p-0 shadow-lg"
+        aria-labelledby="command-dialog-title" 
+        aria-describedby="command-dialog-description"
+      >
         <span id="command-dialog-description" className="sr-only">
           Search commands dialog
         </span>
