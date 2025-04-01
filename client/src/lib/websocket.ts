@@ -1,8 +1,7 @@
-
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback } from "react";
 
 export interface ChatMessage {
-  type: 'chat_message';
+  type: "chat_message";
   payload: {
     chatId: number;
     senderId: number;
@@ -12,28 +11,28 @@ export interface ChatMessage {
 }
 
 export interface UserStatusUpdate {
-  type: 'user_status';
+  type: "user_status";
   payload: {
     userId: number;
-    status: 'online' | 'offline';
+    status: "online" | "offline";
   };
 }
 
 export interface ErrorMessage {
-  type: 'error';
+  type: "error";
   payload: {
     message: string;
   };
 }
 
 export type WebSocketMessage = ChatMessage | UserStatusUpdate | ErrorMessage;
-export type ConnectionStatus = 'connecting' | 'open' | 'closed' | 'error';
+export type ConnectionStatus = "connecting" | "open" | "closed" | "error";
 
 let websocketInstance: ReturnType<typeof useWebSocket> | null = null;
 
 export function getWebSocketInstance() {
   if (!websocketInstance) {
-    throw new Error('WebSocket instance not initialized');
+    throw new Error("WebSocket instance not initialized");
   }
   return websocketInstance;
 }
@@ -46,67 +45,69 @@ export function initializeWebSocket() {
 }
 
 export function useWebSocket() {
-  const [status, setStatus] = useState<ConnectionStatus>('closed');
+  const [status, setStatus] = useState<ConnectionStatus>("closed");
   const [messages, setMessages] = useState<WebSocketMessage[]>([]);
   const socket = useRef<WebSocket | null>(null);
   const reconnectTimeout = useRef<NodeJS.Timeout>();
 
   const connect = useCallback(() => {
     if (socket.current?.readyState === WebSocket.OPEN) {
-      console.log('WebSocket already connected');
+      console.log("WebSocket already connected");
       return;
     }
 
     if (socket.current?.readyState === WebSocket.CONNECTING) {
-      console.log('WebSocket already connecting');
+      console.log("WebSocket already connecting");
       return;
     }
 
-    setStatus('connecting');
+    setStatus("connecting");
 
     try {
-      // Get the current hostname from window.location
-      const hostname = window.location.hostname;
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${hostname}/ws`;
-      console.log('Attempting WebSocket connection to:', wsUrl);
+      // Obtener el hostname desde window.location
+      const hostname =
+        window.location.hostname === "localhost"
+          ? "0.0.0.0"
+          : window.location.hostname;
+      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      const wsUrl = `${protocol}//${hostname}/ws`; // Conectar a 0.0.0.0
+      console.log("Attempting WebSocket connection to:", wsUrl);
 
       socket.current = new WebSocket(wsUrl);
 
       socket.current.onopen = () => {
-        console.log('WebSocket connected successfully');
-        setStatus('open');
+        console.log("WebSocket connected successfully");
+        setStatus("open");
         if (reconnectTimeout.current) {
           clearTimeout(reconnectTimeout.current);
         }
       };
 
       socket.current.onclose = () => {
-        console.log('WebSocket connection closed');
-        setStatus('closed');
-        // Intento de reconexión después de 3 segundos
+        console.log("WebSocket connection closed");
+        setStatus("closed");
         reconnectTimeout.current = setTimeout(() => {
-          console.log('Attempting to reconnect...');
+          console.log("Attempting to reconnect...");
           connect();
         }, 3000);
       };
 
       socket.current.onerror = (error) => {
-        console.error('WebSocket error:', error);
-        setStatus('error');
+        console.error("WebSocket error:", error);
+        setStatus("error");
       };
 
       socket.current.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data);
-          setMessages(prev => [...prev, message]);
+          setMessages((prev) => [...prev, message]);
         } catch (error) {
-          console.error('Error parsing WebSocket message:', error);
+          console.error("Error parsing WebSocket message:", error);
         }
       };
     } catch (error) {
-      console.error('Error creating WebSocket:', error);
-      setStatus('error');
+      console.error("Error creating WebSocket:", error);
+      setStatus("error");
     }
   }, []);
 
@@ -118,16 +119,19 @@ export function useWebSocket() {
       socket.current.close();
       socket.current = null;
     }
-    setStatus('closed');
+    setStatus("closed");
   }, []);
 
-  const send = useCallback((message: WebSocketMessage) => {
-    if (socket.current?.readyState === WebSocket.OPEN) {
-      socket.current.send(JSON.stringify(message));
-    } else {
-      console.error('WebSocket is not connected. Current status:', status);
-    }
-  }, [status]);
+  const send = useCallback(
+    (message: WebSocketMessage) => {
+      if (socket.current?.readyState === WebSocket.OPEN) {
+        socket.current.send(JSON.stringify(message));
+      } else {
+        console.error("WebSocket is not connected. Current status:", status);
+      }
+    },
+    [status],
+  );
 
   useEffect(() => {
     connect();
@@ -141,6 +145,6 @@ export function useWebSocket() {
     messages,
     connect,
     disconnect,
-    send
+    send,
   };
 }
