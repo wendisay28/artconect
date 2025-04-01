@@ -1,14 +1,12 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "@/context/location-context";
-import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient } from "@/lib/queryClient";
 import SearchFilters from "@/components/search-filters";
 import SwipeableCard from "@/components/swipeable-card";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { SlidersHorizontal, Smile, MoveRight } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { SlidersHorizontal, Smile } from "lucide-react";
 
 export default function ExplorerPage() {
   const [activeTab, setActiveTab] = useState<"artists" | "events">("artists");
@@ -16,83 +14,42 @@ export default function ExplorerPage() {
   const { locationData } = useLocation();
   const { toast } = useToast();
 
-  // Define types for items
-  interface ExplorerItem {
-    id: string | number;
-    name?: string;
-    displayName?: string;
-    photoURL?: string;
-    image?: string;
-    role?: string;
-    category?: string;
-    location?: string;
-    distance?: number;
-    minPrice?: number;
-    maxPrice?: number;
-    priceUnit?: string;
-    price?: number;
-    isFree?: boolean;
-    age?: number;
-  }
-
-  // Fetch artists or events based on active tab
-  const { data: items, isLoading, refetch } = useQuery<ExplorerItem[]>({
-    queryKey: [activeTab === "artists" ? '/api/artists/explore' : '/api/events/explore', 
-               locationData?.coordinates?.latitude, 
-               locationData?.coordinates?.longitude],
-    throwOnError: false,
+  const { data: items = [], isLoading, refetch } = useQuery({
+    queryKey: [
+      activeTab === "artists" ? '/api/artists/explore' : '/api/events/explore',
+      locationData?.coordinates?.latitude,
+      locationData?.coordinates?.longitude
+    ],
+    enabled: !!locationData?.coordinates,
   });
 
-  // Importamos lo necesario para hacer la petición
-  const [loadingLike, setLoadingLike] = useState(false);
-  const { user } = useAuth();
-
   const handleLike = async (id: string | number) => {
-    if (!user) {
-      toast({
-        title: "Necesitas iniciar sesión",
-        description: "Para añadir a favoritos, inicia sesión primero",
-      });
-      return;
-    }
-
-    if (!id) {
-      console.error('ID inválido:', id);
-      return;
-    }
-
     try {
-      setLoadingLike(true);
-
-      const favoriteData = {
-        type: activeTab === "artists" ? "artist" : "event",
-        itemId: typeof id === 'string' ? parseInt(id, 10) : id,
-      };
-
-      await apiRequest("POST", "/api/favorites", favoriteData);
-
-      queryClient.invalidateQueries({ queryKey: [`/api/favorites/${activeTab}`] });
+      await fetch('/api/favorites', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: activeTab === "artists" ? "artist" : "event",
+          itemId: id
+        })
+      });
 
       toast({
-        title: "Guardado exitosamente",
+        title: "¡Guardado!",
         description: `${activeTab === "artists" ? "Artista" : "Evento"} añadido a favoritos`,
       });
 
       goToNextItem();
     } catch (error) {
-      console.error('Error al dar like:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "No se pudo guardar en favoritos. Inténtalo de nuevo."
+        description: "No se pudo guardar en favoritos"
       });
-    } finally {
-      setLoadingLike(false);
     }
   };
 
-  const handleDislike = (id: string) => {
-    // Skip to next item
+  const handleDislike = () => {
     goToNextItem();
   };
 
@@ -102,8 +59,7 @@ export default function ExplorerPage() {
     }
   };
 
-  const handleApplyFilters = (filters: any) => {
-    // Apply filters and refetch data
+  const handleApplyFilters = () => {
     refetch();
     toast({
       title: "Filtros aplicados",
@@ -111,56 +67,24 @@ export default function ExplorerPage() {
     });
   };
 
-  const formatPriceRange = (minPrice: number, maxPrice: number, unit: string = "hora") => {
-    const formatter = new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    });
-
-    if (maxPrice) {
-      return `${formatter.format(minPrice)} - ${formatter.format(maxPrice)} / ${unit}`;
-    }
-    return `${formatter.format(minPrice)} / ${unit}`;
-  };
-
   return (
     <div className="container mx-auto px-4 py-6">
       <header className="flex justify-between items-center mb-6">
         <h1 className="font-bold text-2xl">Explorar</h1>
-
         <div className="flex items-center">
-          <SearchFilters 
+          <SearchFilters
             onApplyFilters={handleApplyFilters}
             filterType={activeTab}
             triggerButton={
-              <Button variant="outline" size="sm" className="mr-2">
+              <Button variant="outline" size="sm">
                 <SlidersHorizontal className="h-4 w-4 mr-2" />
                 Filtros
               </Button>
             }
           />
-          <div className="flex border border-border rounded-full">
-            <Button 
-              variant={activeTab === "artists" ? "default" : "ghost"} 
-              className="rounded-full"
-              onClick={() => setActiveTab("artists")}
-            >
-              Artistas
-            </Button>
-            <Button 
-              variant={activeTab === "events" ? "default" : "ghost"} 
-              className="rounded-full"
-              onClick={() => setActiveTab("events")}
-            >
-              Eventos
-            </Button>
-          </div>
         </div>
       </header>
 
-      {/* Swipeable Cards Area */}
       <div className="relative h-[calc(100vh-13rem)] max-h-[700px] mx-auto max-w-md mt-4">
         {isLoading ? (
           <div className="absolute inset-0 flex items-center justify-center">
@@ -169,7 +93,7 @@ export default function ExplorerPage() {
               <p>Cargando {activeTab === "artists" ? "artistas" : "eventos"}...</p>
             </div>
           </div>
-        ) : items && items.length > 0 ? (
+        ) : items.length > 0 ? (
           <div className="relative w-full h-full">
             {items.map((item, idx) => (
               idx >= currentIndex && (
@@ -177,61 +101,34 @@ export default function ExplorerPage() {
                   key={item.id}
                   id={item.id}
                   imageUrl={item.photoURL || item.image}
-                  name={item.name || item.displayName}
-                  age={item.age}
+                  name={item.displayName || item.name}
                   role={item.role || item.category}
                   location={item.location}
                   distance={item.distance}
-                  priceRange={
-                    activeTab === "artists" 
-                      ? formatPriceRange(item.minPrice, item.maxPrice, item.priceUnit) 
-                      : item.isFree ? "Gratis" : formatPriceRange(item.price, 0, "entrada")
-                  }
+                  priceRange={`${new Intl.NumberFormat('es-CO', {
+                    style: 'currency',
+                    currency: 'COP',
+                    minimumFractionDigits: 0,
+                  }).format(item.minPrice || item.price)} / ${item.priceUnit || 'hora'}`}
                   onLike={handleLike}
                   onDislike={handleDislike}
                   isLast={idx === items.length - 1}
                 />
               )
             ))}
-
-            {/* Empty state (shown when all cards are swiped) */}
-            {currentIndex >= items.length && (
-              <Card className="absolute inset-0 rounded-xl overflow-hidden flex flex-col items-center justify-center text-center p-6">
-                <Smile className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="font-semibold text-xl mb-2">
-                  ¡Has visto todos los perfiles por hoy!
-                </h3>
-                <p className="text-muted-foreground mb-6">
-                  Vuelve más tarde para descubrir nuevos {activeTab === "artists" ? "artistas" : "eventos"}
-                </p>
-                <Button onClick={() => {
-                  setCurrentIndex(0);
-                  refetch();
-                }}>
-                  Ajustar filtros
-                </Button>
-              </Card>
-            )}
           </div>
         ) : (
           <Card className="absolute inset-0 rounded-xl overflow-hidden flex flex-col items-center justify-center text-center p-6">
-            <div className="text-muted-foreground mb-4 text-7xl">🔍</div>
+            <Smile className="h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="font-semibold text-xl mb-2">
-              No se encontraron resultados
+              No hay más perfiles por mostrar
             </h3>
             <p className="text-muted-foreground mb-6">
-              Intenta ajustar los filtros o cambiar tu ubicación
+              Intenta ajustar los filtros o vuelve más tarde
             </p>
-            <SearchFilters 
-              onApplyFilters={handleApplyFilters}
-              filterType={activeTab}
-              triggerButton={
-                <Button>
-                  Ajustar filtros
-                  <MoveRight className="ml-2 h-4 w-4" />
-                </Button>
-              }
-            />
+            <Button onClick={() => refetch()}>
+              Actualizar resultados
+            </Button>
           </Card>
         )}
       </div>
