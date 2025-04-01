@@ -19,7 +19,7 @@ localPort = 5001
 externalPort = 3000
 
 [workflows]
-runButton = "Dev Server New"
+runButton = "Dev Server Debug"
 
 [[workflows.workflow]]
 name = "Project"
@@ -101,3 +101,12 @@ args = "npm install"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "NODE_ENV=development tsx server/index.ts"
+
+[[workflows.workflow]]
+name = "Dev Server Debug"
+author = 41061689
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "NODE_ENV=development DEBUG=* tsx server/index.ts"
