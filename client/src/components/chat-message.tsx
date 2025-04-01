@@ -1,6 +1,19 @@
 
 import { useState, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
+export function ChatTypingIndicator({ name }: { name: string }) {
+  return (
+    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <div className="typing-indicator">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+      {name} está escribiendo...
+    </div>
+  );
+}
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Image, File, Send, Check, CheckCheck } from 'lucide-react';
