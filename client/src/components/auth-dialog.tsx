@@ -30,7 +30,7 @@ export default function AuthDialog({ onClose }: AuthDialogProps) {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email || !password) {
       toast({
         variant: "destructive",
@@ -39,7 +39,7 @@ export default function AuthDialog({ onClose }: AuthDialogProps) {
       });
       return;
     }
-    
+
     try {
       await signIn({ email, password });
       onClose();
@@ -50,7 +50,7 @@ export default function AuthDialog({ onClose }: AuthDialogProps) {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email || !password || !username || !displayName) {
       toast({
         variant: "destructive",
@@ -77,7 +77,7 @@ export default function AuthDialog({ onClose }: AuthDialogProps) {
       });
       return;
     }
-    
+
     try {
       await signUp({ email, password, username, displayName });
       onClose();
@@ -108,18 +108,18 @@ export default function AuthDialog({ onClose }: AuthDialogProps) {
           </DialogTitle>
           <DialogDescription id="auth-dialog-description" className="text-center">
             {activeTab === "login" 
-              ? "Inicia sesión para acceder a tu cuenta" 
-              : "Crea una cuenta para comenzar a explorar"
+              ? "Inicia sesión para acceder a tu cuenta en BuscArt" 
+              : "Crea una cuenta para comenzar a explorar BuscArt"
             }
           </DialogDescription>
         </DialogHeader>
-        
+
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-2 mb-4">
             <TabsTrigger value="login">Iniciar sesión</TabsTrigger>
             <TabsTrigger value="signup">Registrarse</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="login">
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
@@ -160,7 +160,7 @@ export default function AuthDialog({ onClose }: AuthDialogProps) {
               </Button>
             </form>
           </TabsContent>
-          
+
           <TabsContent value="signup">
             <form onSubmit={handleSignUp} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -213,7 +213,7 @@ export default function AuthDialog({ onClose }: AuthDialogProps) {
             </form>
           </TabsContent>
         </Tabs>
-        
+
         <div className="relative mt-4">
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-border"></div>
@@ -224,7 +224,7 @@ export default function AuthDialog({ onClose }: AuthDialogProps) {
             </span>
           </div>
         </div>
-        
+
         <Button 
           variant="outline" 
           className="w-full" 
@@ -234,7 +234,7 @@ export default function AuthDialog({ onClose }: AuthDialogProps) {
           <FcGoogle className="mr-2 h-5 w-5" />
           Google
         </Button>
-        
+
         <DialogFooter className="text-center text-sm text-muted-foreground">
           Al {activeTab === "login" ? "iniciar sesión" : "registrarte"}, aceptas nuestros{" "}
           <a href="#" className="text-primary hover:underline">

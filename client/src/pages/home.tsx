@@ -61,27 +61,27 @@ export default function HomePage() {
   const { locationData } = useLocation();
   const { toast } = useToast();
   const [activeBlogIndex, setActiveBlogIndex] = useState(0);
-  
+
   const { data: featuredEvents, isLoading: isLoadingEvents } = useQuery<Event[]>({
     queryKey: ['/api/events/featured'],
     throwOnError: false,
   });
-  
+
   const { data: recommendedArtists, isLoading: isLoadingArtists } = useQuery<Artist[]>({
     queryKey: ['/api/artists/recommended', locationData?.coordinates?.latitude, locationData?.coordinates?.longitude],
     throwOnError: false,
   });
-  
+
   const { data: nearbyEvents, isLoading: isLoadingNearbyEvents } = useQuery<Event[]>({
     queryKey: ['/api/events/nearby', locationData?.coordinates?.latitude, locationData?.coordinates?.longitude],
     throwOnError: false,
   });
-  
+
   const { data: blogPosts, isLoading: isLoadingBlogPosts } = useQuery<BlogPost[]>({
     queryKey: ['/api/blog/posts'],
     throwOnError: false,
   });
-  
+
   const { data: products, isLoading: isLoadingProducts } = useQuery<Product[]>({
     queryKey: ['/api/products'],
     throwOnError: false,
@@ -120,8 +120,8 @@ const safeProducts = products || [];
     <div className="container mx-auto px-4 py-6">
       {/* Header with logo and search */}
       <header className="flex justify-between items-center mb-6">
-        <h1 className="font-bold text-2xl text-primary">ArtistConnect</h1>
-        
+        <h1 className="font-bold text-2xl text-primary">BuscArt</h1>
+
         <div className="flex items-center space-x-2">
           <Link href="/search">
             <Button variant="ghost" size="icon" className="rounded-full">
@@ -138,7 +138,7 @@ const safeProducts = products || [];
           </Button>
         </div>
       </header>
-      
+
       {/* Banner Section */}
       <section className="mb-8">
         {isLoadingEvents ? (
@@ -154,7 +154,7 @@ const safeProducts = products || [];
           />
         )}
       </section>
-      
+
       {/* Recommendations Section */}
       <section className="mb-8">
         <div className="flex justify-between items-center mb-4">
@@ -174,7 +174,7 @@ const safeProducts = products || [];
             </Link>
           </div>
         </div>
-        
+
         <div className="overflow-x-auto pb-2 -mx-4 px-4">
           <div className="flex space-x-4">
             {isLoadingArtists ? (
@@ -201,7 +201,7 @@ const safeProducts = products || [];
             )}
           </div>
         </div>
-        
+
         {locationData.coordinates && (
           <div className="mt-4">
             <Link href="/nearby">
@@ -213,7 +213,7 @@ const safeProducts = products || [];
           </div>
         )}
       </section>
-      
+
       {/* Events Section */}
       <section className="mb-8">
         <div className="flex justify-between items-center mb-4">
@@ -225,7 +225,7 @@ const safeProducts = products || [];
             </span>
           </Link>
         </div>
-        
+
         {isLoadingNearbyEvents ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
             {Array(3).fill(0).map((_, i) => (
@@ -259,7 +259,7 @@ const safeProducts = products || [];
           </div>
         )}
       </section>
-      
+
       {/* Blog Section */}
       <section className="mb-8">
         <div className="flex justify-between items-center mb-4">
@@ -271,7 +271,7 @@ const safeProducts = products || [];
             </span>
           </Link>
         </div>
-        
+
         {isLoadingBlogPosts ? (
           <div className="relative">
             <Skeleton className="h-[320px] w-full rounded-lg" />
@@ -322,7 +322,7 @@ const safeProducts = products || [];
                       </div>
                     ))}
                   </div>
-                  
+
                   {/* Navigation buttons */}
                   {safeBlogPosts.length > 1 && (
                     <>
@@ -344,7 +344,7 @@ const safeProducts = products || [];
                       </Button>
                     </>
                   )}
-                  
+
                   {/* Dots indicator */}
                   {safeBlogPosts.length > 1 && (
                     <div className="flex justify-center gap-2 mt-4">
@@ -364,7 +364,7 @@ const safeProducts = products || [];
           </div>
         )}
       </section>
-      
+
       {/* Shop Section */}
       <section>
         <div className="flex justify-between items-center mb-4">
@@ -376,7 +376,7 @@ const safeProducts = products || [];
             </span>
           </Link>
         </div>
-        
+
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           {isLoadingProducts ? (
             Array(4).fill(0).map((_, i) => (
