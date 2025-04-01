@@ -45,17 +45,13 @@ export default function ChatPage() {
   } = useWebSocket();
 
   // Get other user details for the chat
-  const getOtherUser = () => {
-    if (!chatDetails) return null;
-
+  const otherUser = chatDetails ? (() => {
     const otherUserId = chatDetails.user1Id === user?.uid 
       ? chatDetails.user2Id 
       : chatDetails.user1Id;
 
     return chatDetails.participants?.find(p => p.id === otherUserId);
-  };
-
-  const otherUser = getOtherUser();
+  })() : null;
 
   // Get all chats for the current user
   const { data: chats, isLoading: isLoadingChats } = useQuery({
