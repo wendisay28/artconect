@@ -60,7 +60,11 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npm install"
+args = "rm -rf node_modules"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm install --force"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
