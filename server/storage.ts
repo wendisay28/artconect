@@ -1,8 +1,5 @@
-import { Artist, InsertArtist, Service, Event, User, InsertUser, InsertService, InsertEvent,
-         Favorite, InsertFavorite, Chat, Message, InsertMessage, Product, InsertProduct,
-         ServiceRequest } from "@shared/schema";
+import { Artist, Service, Event, User, Favorite, Chat, Message, Product, ServiceRequest } from "@shared/schema";
 import { getFirestore } from "firebase/firestore";
-import { getStorage as getFirebaseStorage } from "firebase/storage";
 import { initializeApp } from "firebase/app";
 import { db } from './db';
 import { Timestamp } from 'firebase-admin/firestore';
@@ -13,10 +10,9 @@ const firebaseConfig = {
 };
 const app = initializeApp(firebaseConfig);
 const dbFirebase = getFirestore(app); // Keep this for potential future use
-const firebaseStorage = getFirebaseStorage(app);
-
 
 export class Storage {
+  // Users
   async getAllUsers(): Promise<User[]> {
     const snapshot = await db.collection('users').get();
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
@@ -28,10 +24,7 @@ export class Storage {
   }
 
   async getUserByFirebaseUid(uid: string): Promise<User | undefined> {
-    const snapshot = await db.collection('users')
-      .where('firebaseUid', '==', uid)
-      .limit(1)
-      .get();
+    const snapshot = await db.collection('users').where('firebaseUid', '==', uid).get();
     return snapshot.empty ? undefined : { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as User;
   }
 
@@ -55,9 +48,22 @@ export class Storage {
     await db.collection('users').doc(id).delete();
   }
 
-  // Artistas - Retaining mock data functionality for now
-  async getAllArtists(): Promise<Artist[]> { return []; }
-  async getArtist(id: number): Promise<Artist | undefined> { return undefined; }
+  // Artists
+  async getAllArtists(): Promise<Artist[]> {
+    const snapshot = await db.collection('artists').get();
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Artist));
+  }
+
+  async getArtist(id: string): Promise<Artist | undefined> {
+    const doc = await db.collection('artists').doc(id).get();
+    return doc.exists ? { id: doc.id, ...doc.data() } as Artist : undefined;
+  }
+
+  async createArtist(artistData: Omit<Artist, 'id'>): Promise<Artist> {
+    const docRef = await db.collection('artists').add(artistData);
+    const doc = await docRef.get();
+    return { id: doc.id, ...doc.data() } as Artist;
+  }
   async getRecommendedArtists(lat?: number, lng?: number): Promise<any[]> { 
     return [
       { id: 1, name: "Laura Restrepo", role: "Fotógrafa", minPrice: 200000, photoURL: "https://randomuser.me/api/portraits/women/22.jpg", rating: 4.8 },
@@ -67,12 +73,9 @@ export class Storage {
     ];
   }
   async getArtistsForExplorer(lat?: number, lng?: number): Promise<any[]> { return []; }
-  async createArtist(artistData: InsertArtist): Promise<Artist> { return {} as Artist; }
   async getArtistServices(artistId: number): Promise<Service[]> { return []; }
   async getArtistReviews(artistId: number): Promise<any[]> { return []; }
 
-  // Services - Retaining mock data functionality for now
-  async createService(service: InsertService): Promise<Service> { return {} as Service; }
 
   // Events
   async getAllEvents(): Promise<Event[]> {
@@ -128,6 +131,24 @@ export class Storage {
   async getUserChats(userId: number): Promise<any[]> { return []; }
   async getChat(id: number): Promise<any | undefined> { return undefined; }
   async createChat(user1Id: number, user2Id: number): Promise<any> { return {}; }
+
+  // Messages
+  async getMessages(chatId: string): Promise<Message[]> {
+    const snapshot = await db.collection('messages')
+      .where('chatId', '==', chatId)
+      .orderBy('createdAt', 'asc')
+      .get();
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
+  }
+
+  async createMessage(messageData: Omit<Message, 'id' | 'createdAt'>): Promise<Message> {
+    const docRef = await db.collection('messages').add({
+      ...messageData,
+      createdAt: Timestamp.now()
+    });
+    const doc = await docRef.get();
+    return { id: doc.id, ...doc.data() } as Message;
+  }
   async getChatMessages(chatId: number): Promise<Message[]> { return []; }
   async createMessage(messageData: InsertMessage): Promise<Message> { return {} as Message; }
 

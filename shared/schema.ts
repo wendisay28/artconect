@@ -1,3 +1,4 @@
+
 import { Timestamp } from 'firebase/firestore';
 
 // Users
@@ -56,7 +57,7 @@ export interface Artist {
   maxPrice?: number;
   priceUnit?: string;
   gallery?: string[];
-  availability?: any; //  Maintaining flexibility for now; could be improved with a specific type.
+  availability?: any;
 }
 
 // Services
@@ -69,14 +70,6 @@ export interface Service {
   unit?: string;
 }
 
-// Chats
-export interface Chat {
-  id: string;
-  user1Id: string;
-  user2Id: string;
-  createdAt: Timestamp;
-}
-
 // Messages
 export interface Message {
   id: string;
@@ -87,6 +80,13 @@ export interface Message {
   read: boolean;
 }
 
+// Chats
+export interface Chat {
+  id: string;
+  user1Id: string;
+  user2Id: string;
+  createdAt: Timestamp;
+}
 
 // Products
 export interface Product {
