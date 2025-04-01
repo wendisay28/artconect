@@ -1,8 +1,8 @@
+
 import { Artist, Service, Event, User, Favorite, Chat, Message, Product, ServiceRequest } from "@shared/schema";
 import { getFirestore } from 'firebase-admin/firestore';
 import { db } from './db';
 
-// Exportamos las funciones del storage que usan la instancia de db importada
 export const storage = {
   // Users
   async createUser(userData: Partial<User>) {
@@ -50,7 +50,8 @@ export const storage = {
     const snapshot = await db.collection('artists').get();
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   },
-  async getRecommendedArtists(lat?: number, lng?: number): Promise<any[]> { 
+
+  async getRecommendedArtists(lat?: number, lng?: number) {
     return [
       { id: 1, name: "Laura Restrepo", role: "Fotógrafa", minPrice: 200000, photoURL: "https://randomuser.me/api/portraits/women/22.jpg", rating: 4.8 },
       { id: 2, name: "Carlos Ruiz", role: "Músico", minPrice: 150000, photoURL: "https://randomuser.me/api/portraits/men/32.jpg", rating: 4.9 },
@@ -58,10 +59,18 @@ export const storage = {
       { id: 4, name: "Santiago López", role: "Diseñador gráfico", minPrice: 180000, photoURL: "https://randomuser.me/api/portraits/men/67.jpg", rating: 4.5 }
     ];
   },
-  async getArtistsForExplorer(lat?: number, lng?: number): Promise<any[]> { return []; }
-  async getArtistServices(artistId: number): Promise<Service[]> { return []; }
-  async getArtistReviews(artistId: number): Promise<any[]> { return []; }
 
+  async getArtistsForExplorer(lat?: number, lng?: number) { 
+    return []; 
+  },
+
+  async getArtistServices(artistId: number) { 
+    return []; 
+  },
+
+  async getArtistReviews(artistId: number) { 
+    return []; 
+  },
 
   // Events
   async createEvent(eventData: Partial<Event>) {
@@ -80,73 +89,53 @@ export const storage = {
     const snapshot = await db.collection('events').get();
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   },
-  async getFeaturedEvents(): Promise<any[]> { return []; }
-  async getNearbyEvents(lat?: number, lng?: number): Promise<any[]> { return []; }
-  async getEventsForExplorer(lat?: number, lng?: number): Promise<any[]> { return []; }
-  async getEventAttendees(eventId: number): Promise<any[]> { return []; }
 
-  // Favorites
-  async getFavorites(userId: string): Promise<Favorite[]> {
-    const snapshot = await db.collection('favorites')
-      .where('userId', '==', userId)
-      .get();
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Favorite));
+  async getFeaturedEvents() { 
+    return []; 
   },
 
-  async createFavorite(favoriteData: Omit<Favorite, 'id' | 'createdAt'>): Promise<Favorite> {
-    const docRef = await db.collection('favorites').add({
-      ...favoriteData,
-      createdAt: Timestamp.now()
-    });
-    const doc = await docRef.get();
-    return { id: doc.id, ...doc.data() } as Favorite;
+  async getNearbyEvents(lat?: number, lng?: number) { 
+    return []; 
   },
 
-  async removeFavorite(id: string): Promise<void> {
-    await db.collection('favorites').doc(id).delete();
+  async getEventsForExplorer(lat?: number, lng?: number) { 
+    return []; 
   },
-  async getFavoriteArtists(userId: number): Promise<any[]> { return []; }
-  async getFavoriteEvents(userId: number): Promise<any[]> { return []; }
-  async removeFavoriteArtist(userId: number, artistId: number): Promise<void> { return; }
-  async removeFavoriteEvent(userId: number, eventId: number): Promise<void> { return; }
 
-
-  // Chats - Retaining mock data functionality for now
-  async getUserChats(userId: number): Promise<any[]> { return []; }
-  async getChat(id: number): Promise<any | undefined> { return undefined; }
-  async createChat(user1Id: number, user2Id: number): Promise<any> { return {}; }
+  async getEventAttendees(eventId: number) { 
+    return []; 
+  },
 
   // Messages
-  async getMessages(chatId: string): Promise<Message[]> {
+  async getMessages(chatId: string) {
     const snapshot = await db.collection('messages')
       .where('chatId', '==', chatId)
       .orderBy('createdAt', 'asc')
       .get();
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   },
 
-  async createMessage(messageData: Omit<Message, 'id' | 'createdAt'>): Promise<Message> {
-    const docRef = await db.collection('messages').add({
-      ...messageData,
-      createdAt: Timestamp.now()
-    });
+  async createMessage(messageData: any) {
+    const docRef = await db.collection('messages').add(messageData);
     const doc = await docRef.get();
-    return { id: doc.id, ...doc.data() } as Message;
+    return { id: doc.id, ...doc.data() };
   },
-  async getChatMessages(chatId: number): Promise<Message[]> { return []; }
-  async createMessage(messageData: any): Promise<Message> { return {} as Message; }
 
-  // Products - Retaining mock data functionality for now
-  async getAllProducts(): Promise<any[]> { return []; }
-  async createProduct(productData: any): Promise<Product> { return {} as Product; }
+  // Otros métodos
+  async getFavorites(userId: string) {
+    const snapshot = await db.collection('favorites')
+      .where('userId', '==', userId)
+      .get();
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  },
 
-  // Service Requests - Retaining mock data functionality for now
-  async createServiceRequest(requestData: any): Promise<ServiceRequest> { return {} as ServiceRequest; }
+  async createFavorite(favoriteData: any) {
+    const docRef = await db.collection('favorites').add(favoriteData);
+    const doc = await docRef.get();
+    return { id: doc.id, ...doc.data() };
+  },
 
-  // Search - Retaining mock data functionality for now
-  async searchArtists(query?: string, lat?: number, lng?: number, filters?: any): Promise<any[]> { return []; }
-  async searchEvents(query?: string, lat?: number, lng?: number, filters?: any): Promise<any[]> { return []; }
-
-  // Blog - Retaining mock data functionality for now
-  async getBlogPosts(): Promise<any[]> { return []; }
+  async removeFavorite(id: string) {
+    await db.collection('favorites').doc(id).delete();
+  }
 };
