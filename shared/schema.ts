@@ -1,5 +1,86 @@
 
 import { Timestamp } from 'firebase/firestore';
+import { z } from 'zod';
+
+// Validation Schemas
+export const insertUserSchema = z.object({
+  firebaseUid: z.string(),
+  username: z.string().optional(),
+  email: z.string().email(),
+  displayName: z.string(),
+  photoURL: z.string().optional(),
+  bio: z.string().optional(),
+  role: z.string(),
+  location: z.string().optional(),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
+  skills: z.array(z.string()).optional()
+});
+
+export const insertArtistSchema = z.object({
+  userId: z.string(),
+  category: z.string(),
+  subcategory: z.string().optional(),
+  minPrice: z.number().optional(),
+  maxPrice: z.number().optional(),
+  priceUnit: z.string().optional(),
+  gallery: z.array(z.string()).optional()
+});
+
+export const insertEventSchema = z.object({
+  creatorId: z.string(),
+  name: z.string(),
+  description: z.string().optional(),
+  eventType: z.string(),
+  date: z.any(),
+  location: z.string().optional(),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
+  virtualLink: z.string().optional(),
+  price: z.number().optional(),
+  isFree: z.boolean(),
+  image: z.string().optional()
+});
+
+export const insertFavoriteSchema = z.object({
+  userId: z.string(),
+  itemId: z.string(),
+  type: z.enum(['artist', 'event'])
+});
+
+export const insertServiceSchema = z.object({
+  artistId: z.string(),
+  name: z.string(),
+  description: z.string().optional(),
+  price: z.number(),
+  unit: z.string().optional()
+});
+
+export const insertMessageSchema = z.object({
+  chatId: z.string(),
+  senderId: z.string(),
+  content: z.string(),
+  read: z.boolean()
+});
+
+export const insertProductSchema = z.object({
+  artistId: z.string(),
+  name: z.string(),
+  description: z.string().optional(),
+  price: z.number(),
+  image: z.string().optional()
+});
+
+export const insertServiceRequestSchema = z.object({
+  clientId: z.string(),
+  category: z.string(),
+  subcategory: z.string().optional(),
+  description: z.string(),
+  budget: z.number().optional(),
+  date: z.any().optional(),
+  location: z.string().optional(),
+  status: z.string()
+});
 
 // Users
 export interface User {
