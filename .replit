@@ -19,7 +19,7 @@ localPort = 5001
 externalPort = 3000
 
 [workflows]
-runButton = "Dev Server Debug"
+runButton = "Start Full Stack"
 
 [[workflows.workflow]]
 name = "Project"
@@ -110,3 +110,20 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "NODE_ENV=development DEBUG=* tsx server/index.ts"
+
+[[workflows.workflow]]
+name = "Start Full Stack"
+author = 41061689
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm install"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run build"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "NODE_ENV=development tsx server/index.ts"

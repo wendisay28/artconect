@@ -4,11 +4,12 @@ import { setupVite } from "./vite";
 import path from "path";
 
 const app = express();
-const port = 5000;
+const port = process.env.PORT || 5000;
 
 // Middlewares básicos
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, '../client/dist')));
 
 // CORS middleware
 app.use((req, res, next) => {
