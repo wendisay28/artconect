@@ -10,7 +10,16 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { ChevronRight, ChevronLeft, Search, Bell, BookmarkCheck, Share2, MapPin, MessageSquare } from "lucide-react";
+import {
+  ChevronRight,
+  ChevronLeft,
+  Search,
+  Bell,
+  BookmarkCheck,
+  Share2,
+  MapPin,
+  MessageSquare,
+} from "lucide-react";
 
 // Definición de tipos para los datos de API
 interface Event {
@@ -62,28 +71,44 @@ export default function HomePage() {
   const { toast } = useToast();
   const [activeBlogIndex, setActiveBlogIndex] = useState(0);
 
-  const { data: featuredEvents, isLoading: isLoadingEvents } = useQuery<Event[]>({
-    queryKey: ['/api/events/featured'],
+  const { data: featuredEvents, isLoading: isLoadingEvents } = useQuery<
+    Event[]
+  >({
+    queryKey: ["/api/events/featured"],
     throwOnError: false,
   });
 
-  const { data: recommendedArtists, isLoading: isLoadingArtists } = useQuery<Artist[]>({
-    queryKey: ['/api/artists/recommended', locationData?.coordinates?.latitude, locationData?.coordinates?.longitude],
+  const { data: recommendedArtists, isLoading: isLoadingArtists } = useQuery<
+    Artist[]
+  >({
+    queryKey: [
+      "/api/artists/recommended",
+      locationData?.coordinates?.latitude,
+      locationData?.coordinates?.longitude,
+    ],
     throwOnError: false,
   });
 
-  const { data: nearbyEvents, isLoading: isLoadingNearbyEvents } = useQuery<Event[]>({
-    queryKey: ['/api/events/nearby', locationData?.coordinates?.latitude, locationData?.coordinates?.longitude],
+  const { data: nearbyEvents, isLoading: isLoadingNearbyEvents } = useQuery<
+    Event[]
+  >({
+    queryKey: [
+      "/api/events/nearby",
+      locationData?.coordinates?.latitude,
+      locationData?.coordinates?.longitude,
+    ],
     throwOnError: false,
   });
 
-  const { data: blogPosts, isLoading: isLoadingBlogPosts } = useQuery<BlogPost[]>({
-    queryKey: ['/api/blog/posts'],
+  const { data: blogPosts, isLoading: isLoadingBlogPosts } = useQuery<
+    BlogPost[]
+  >({
+    queryKey: ["/api/blog/posts"],
     throwOnError: false,
   });
 
   const { data: products, isLoading: isLoadingProducts } = useQuery<Product[]>({
-    queryKey: ['/api/products'],
+    queryKey: ["/api/products"],
     throwOnError: false,
   });
 
@@ -95,26 +120,29 @@ export default function HomePage() {
   };
 
   const handleShareEvent = (id: string) => {
-    // Implement share functionality
+    // Implementar funcionalidad para compartir
     toast({
       title: "Compartir evento",
       description: "Funcionalidad de compartir en desarrollo",
     });
   };
 
-  // Inicializar los arrays para evitar errores de undefined
+  // Placeholders para imágenes en caso de que no se provea una URL
   const PLACEHOLDER_IMAGES = {
-  event: "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=800&auto=format",
-  artist: "https://images.unsplash.com/photo-1511735111819-9a3f7709049c?w=800&auto=format",
-  blog: "https://images.unsplash.com/photo-1505673542670-a5e3ff5b14a3?w=800&auto=format",
-  product: "https://images.unsplash.com/photo-1556449895-a33c9dba33dd?w=800&auto=format"
-};
+    event:
+      "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=800&auto=format",
+    artist:
+      "https://images.unsplash.com/photo-1511735111819-9a3f7709049c?w=800&auto=format",
+    blog: "https://images.unsplash.com/photo-1505673542670-a5e3ff5b14a3?w=800&auto=format",
+    product:
+      "https://images.unsplash.com/photo-1556449895-a33c9dba33dd?w=800&auto=format",
+  };
 
-const safeEvents = featuredEvents || [];
-const safeArtists = recommendedArtists || [];
-const safeNearbyEvents = nearbyEvents || [];
-const safeBlogPosts = blogPosts || [];
-const safeProducts = products || [];
+  const safeEvents = featuredEvents || [];
+  const safeArtists = recommendedArtists || [];
+  const safeNearbyEvents = nearbyEvents || [];
+  const safeBlogPosts = blogPosts || [];
+  const safeProducts = products || [];
 
   return (
     <div className="container mx-auto px-4 py-6">
@@ -144,12 +172,15 @@ const safeProducts = products || [];
         {isLoadingEvents ? (
           <Skeleton className="h-44 w-full rounded-xl" />
         ) : (
-          <BannerCarousel 
-            items={safeEvents.map(event => ({
+          <BannerCarousel
+            items={safeEvents.map((event) => ({
               id: String(event.id),
-              imageUrl: event.image || '',
+              imageUrl: event.image || PLACEHOLDER_IMAGES.event,
               title: event.name,
-              subtitle: event.description ? event.description.slice(0, 60) + (event.description.length > 60 ? '...' : '') : ''
+              subtitle: event.description
+                ? event.description.slice(0, 60) +
+                  (event.description.length > 60 ? "..." : "")
+                : "",
             }))}
           />
         )}
@@ -177,28 +208,28 @@ const safeProducts = products || [];
 
         <div className="overflow-x-auto pb-2 -mx-4 px-4">
           <div className="flex space-x-4">
-            {isLoadingArtists ? (
-              Array(4).fill(0).map((_, i) => (
-                <div key={i} className="flex-shrink-0 w-40">
-                  <Skeleton className="h-40 w-40 rounded-lg" />
-                  <Skeleton className="h-4 w-32 mt-2" />
-                  <Skeleton className="h-3 w-20 mt-1" />
-                </div>
-              ))
-            ) : (
-              safeArtists.map(artist => (
-                <div key={artist.id} className="flex-shrink-0 w-40">
-                  <ArtistCard
-                    id={String(artist.id)}
-                    name={artist.name}
-                    role={artist.role}
-                    price={artist.minPrice}
-                    priceUnit="hora"
-                    imageUrl={artist.photoURL || ''}
-                  />
-                </div>
-              ))
-            )}
+            {isLoadingArtists
+              ? Array(4)
+                  .fill(0)
+                  .map((_, i) => (
+                    <div key={i} className="flex-shrink-0 w-40">
+                      <Skeleton className="h-40 w-40 rounded-lg" />
+                      <Skeleton className="h-4 w-32 mt-2" />
+                      <Skeleton className="h-3 w-20 mt-1" />
+                    </div>
+                  ))
+              : safeArtists.map((artist) => (
+                  <div key={artist.id} className="flex-shrink-0 w-40">
+                    <ArtistCard
+                      id={String(artist.id)}
+                      name={artist.name}
+                      role={artist.role}
+                      price={artist.minPrice}
+                      priceUnit="hora"
+                      imageUrl={artist.photoURL || PLACEHOLDER_IMAGES.artist}
+                    />
+                  </div>
+                ))}
           </div>
         </div>
 
@@ -207,7 +238,8 @@ const safeProducts = products || [];
             <Link href="/nearby">
               <Button variant="outline" className="w-full">
                 <MapPin className="h-4 w-4 mr-2" />
-                Ver artistas cerca de {locationData.address.split(',')[0] || 'mi ubicación'}
+                Ver artistas cerca de{" "}
+                {locationData.address.split(",")[0] || "mi ubicación"}
               </Button>
             </Link>
           </div>
@@ -228,20 +260,26 @@ const safeProducts = products || [];
 
         {isLoadingNearbyEvents ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
-            {Array(3).fill(0).map((_, i) => (
-              <Skeleton key={i} className="h-48 w-full rounded-lg" />
-            ))}
+            {Array(3)
+              .fill(0)
+              .map((_, i) => (
+                <Skeleton key={i} className="h-48 w-full rounded-lg" />
+              ))}
           </div>
         ) : safeNearbyEvents.length === 0 ? (
           <Card>
             <CardContent className="py-4 text-center">
-              <p className="text-muted-foreground">No hay eventos cercanos disponibles</p>
-              <p className="text-sm text-muted-foreground mt-1">Intenta cambiar tu ubicación o buscar en un área más amplia</p>
+              <p className="text-muted-foreground">
+                No hay eventos cercanos disponibles
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Intenta cambiar tu ubicación o buscar en un área más amplia
+              </p>
             </CardContent>
           </Card>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
-            {safeNearbyEvents.map(event => (
+            {safeNearbyEvents.map((event) => (
               <EventCard
                 key={event.id}
                 id={String(event.id)}
@@ -249,9 +287,12 @@ const safeProducts = products || [];
                 date={new Date(event.date)}
                 location={event.location}
                 price={event.price}
-                imageUrl={event.image || ''}
+                imageUrl={event.image || PLACEHOLDER_IMAGES.event}
                 isFree={event.isFree}
-                isVirtual={event.eventType === 'virtual'}
+                isVirtual={event.eventType === "virtual"}
+                // Se envía el tipo de evento para que se pueda mostrar información
+                // adicional (por ejemplo, "Club de lectura", "Obra de teatro", "Noche de tango", etc.)
+                eventType={event.eventType}
                 onSave={handleSaveEvent}
                 onShare={handleShareEvent}
               />
@@ -288,24 +329,28 @@ const safeProducts = products || [];
               <div className="overflow-hidden rounded-lg">
                 <div id="blog-carousel" className="relative">
                   {/* Blog post content */}
-                  <div className="flex transition-transform duration-300 ease-in-out" 
-                       style={{ transform: `translateX(-${activeBlogIndex * 100}%)` }}>
-                    {safeBlogPosts.map(post => (
+                  <div
+                    className="flex transition-transform duration-300 ease-in-out"
+                    style={{
+                      transform: `translateX(-${activeBlogIndex * 100}%)`,
+                    }}
+                  >
+                    {safeBlogPosts.map((post) => (
                       <div key={post.id} className="w-full flex-shrink-0">
                         <Card className="border-0 overflow-hidden">
                           <div className="relative h-40 sm:h-60">
-                            <img 
-                              src={post.imageUrl || "https://via.placeholder.com/600x300"}
-                              alt={post.title} 
+                            <img
+                              src={post.imageUrl || PLACEHOLDER_IMAGES.blog}
+                              alt={post.title}
                               className="w-full h-full object-cover"
                             />
                           </div>
                           <CardContent className="p-4">
                             <p className="text-muted-foreground text-xs mb-1">
-                              {new Date(post.date).toLocaleDateString('es-ES', { 
-                                day: 'numeric', 
-                                month: 'long', 
-                                year: 'numeric' 
+                              {new Date(post.date).toLocaleDateString("es-ES", {
+                                day: "numeric",
+                                month: "long",
+                                year: "numeric",
                               })}
                             </p>
                             <h3 className="font-semibold">{post.title}</h3>
@@ -326,19 +371,27 @@ const safeProducts = products || [];
                   {/* Navigation buttons */}
                   {safeBlogPosts.length > 1 && (
                     <>
-                      <Button 
-                        variant="secondary" 
-                        size="icon" 
+                      <Button
+                        variant="secondary"
+                        size="icon"
                         className="absolute top-1/2 left-4 -translate-y-1/2 z-10 rounded-full bg-background/80 hover:bg-background"
-                        onClick={() => setActiveBlogIndex(prev => (prev > 0 ? prev - 1 : safeBlogPosts.length - 1))}
+                        onClick={() =>
+                          setActiveBlogIndex((prev) =>
+                            prev > 0 ? prev - 1 : safeBlogPosts.length - 1,
+                          )
+                        }
                       >
                         <ChevronLeft className="h-5 w-5" />
                       </Button>
-                      <Button 
-                        variant="secondary" 
-                        size="icon" 
+                      <Button
+                        variant="secondary"
+                        size="icon"
                         className="absolute top-1/2 right-4 -translate-y-1/2 z-10 rounded-full bg-background/80 hover:bg-background"
-                        onClick={() => setActiveBlogIndex(prev => (prev < safeBlogPosts.length - 1 ? prev + 1 : 0))}
+                        onClick={() =>
+                          setActiveBlogIndex((prev) =>
+                            prev < safeBlogPosts.length - 1 ? prev + 1 : 0,
+                          )
+                        }
                       >
                         <ChevronRight className="h-5 w-5" />
                       </Button>
@@ -351,7 +404,11 @@ const safeProducts = products || [];
                       {safeBlogPosts.map((_, i) => (
                         <button
                           key={i}
-                          className={`h-2 rounded-full transition-all ${i === activeBlogIndex ? 'w-6 bg-primary' : 'w-2 bg-primary/30'}`}
+                          className={`h-2 rounded-full transition-all ${
+                            i === activeBlogIndex
+                              ? "w-6 bg-primary"
+                              : "w-2 bg-primary/30"
+                          }`}
                           onClick={() => setActiveBlogIndex(i)}
                           aria-label={`Go to slide ${i + 1}`}
                         />
@@ -378,40 +435,44 @@ const safeProducts = products || [];
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-          {isLoadingProducts ? (
-            Array(4).fill(0).map((_, i) => (
-              <div key={i}>
-                <Skeleton className="h-40 w-full rounded-lg aspect-square" />
-                <Skeleton className="h-4 w-3/4 mt-2" />
-                <Skeleton className="h-3 w-1/2 mt-1" />
-                <Skeleton className="h-4 w-1/3 mt-1" />
-              </div>
-            ))
-          ) : (
-            safeProducts.map(product => (
-              <Card key={product.id} className="overflow-hidden">
-                <div className="relative pb-[100%]">
-                  <img 
-                    src={product.image || "https://via.placeholder.com/300"}
-                    alt={product.name} 
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
-                </div>
-                <CardContent className="p-2">
-                  <h3 className="font-medium text-sm truncate">{product.name}</h3>
-                  <p className="text-muted-foreground text-xs">Por: {product.artistName}</p>
-                  <p className="text-primary font-medium mt-1">
-                    {new Intl.NumberFormat('es-CO', {
-                      style: 'currency',
-                      currency: 'COP',
-                      minimumFractionDigits: 0,
-                      maximumFractionDigits: 0,
-                    }).format(product.price)}
-                  </p>
-                </CardContent>
-              </Card>
-            ))
-          )}
+          {isLoadingProducts
+            ? Array(4)
+                .fill(0)
+                .map((_, i) => (
+                  <div key={i}>
+                    <Skeleton className="h-40 w-full rounded-lg aspect-square" />
+                    <Skeleton className="h-4 w-3/4 mt-2" />
+                    <Skeleton className="h-3 w-1/2 mt-1" />
+                    <Skeleton className="h-4 w-1/3 mt-1" />
+                  </div>
+                ))
+            : safeProducts.map((product) => (
+                <Card key={product.id} className="overflow-hidden">
+                  <div className="relative pb-[100%]">
+                    <img
+                      src={product.image || PLACEHOLDER_IMAGES.product}
+                      alt={product.name}
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                  </div>
+                  <CardContent className="p-2">
+                    <h3 className="font-medium text-sm truncate">
+                      {product.name}
+                    </h3>
+                    <p className="text-muted-foreground text-xs">
+                      Por: {product.artistName}
+                    </p>
+                    <p className="text-primary font-medium mt-1">
+                      {new Intl.NumberFormat("es-CO", {
+                        style: "currency",
+                        currency: "COP",
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0,
+                      }).format(product.price)}
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
         </div>
       </section>
     </div>
