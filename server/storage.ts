@@ -1,7 +1,6 @@
-
 import { InsertProduct, InsertServiceRequest, Product, ServiceRequest } from '@/shared/schema';
 
-export class FixStorage {
+class FixStorage {
   async getArtistsForExplorer(lat?: number, lng?: number): Promise<any[]> {
     return [
       {
@@ -127,3 +126,5 @@ export class FixStorage {
     } as any;
   }
 }
+
+export const storage = new FixStorage();
