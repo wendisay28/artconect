@@ -56,19 +56,56 @@ class FixStorage {
     return [
       {
         id: "1",
-        title: "El arte urbano en Colombia",
-        excerpt: "Descubre cómo el arte callejero está transformando nuestras ciudades",
-        imageUrl: "https://images.unsplash.com/photo-1571432574544-25dfb9c0f27c?w=800&auto=format",
-        date: new Date().toISOString(),
-        content: "El arte urbano se ha convertido en una forma poderosa de expresión..."
+        title: "Los 10 Festivales de Arte Más Importantes de Colombia",
+        excerpt: "Un recorrido por los eventos culturales más destacados del país y sus artistas más representativos.",
+        imageUrl: "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?auto=format&q=80",
+        date: new Date("2024-02-15").toISOString(),
+        category: "Eventos"
       },
       {
         id: "2",
-        title: "Música independiente en auge",
-        excerpt: "La escena musical independiente está creciendo más que nunca",
-        imageUrl: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=800&auto=format",
-        date: new Date().toISOString(),
-        content: "Los artistas independientes están encontrando nuevas formas..."
+        title: "Tendencias en Arte Digital para 2024",
+        excerpt: "Descubre cómo la tecnología está transformando el mundo del arte y las nuevas formas de expresión.",
+        imageUrl: "https://images.unsplash.com/photo-1549490349-8643362247b5?auto=format&q=80",
+        date: new Date("2024-02-10").toISOString(),
+        category: "Tecnología"
+      },
+      {
+        id: "3",
+        title: "Guía para Músicos Independientes",
+        excerpt: "Todo lo que necesitas saber para impulsar tu carrera musical de manera profesional.",
+        imageUrl: "https://images.unsplash.com/photo-1511735111819-9a3f7709049c?auto=format&q=80",
+        date: new Date("2024-02-05").toISOString(),
+        category: "Música"
+      }
+    ];
+  }
+
+  async getEventsForExplorer(lat?: number, lng?: number): Promise<any[]> {
+    return [
+      {
+        id: 1,
+        name: "Festival de Jazz bajo las Estrellas",
+        description: "Una noche mágica de jazz contemporáneo con artistas internacionales",
+        date: new Date("2024-03-15T19:00:00").toISOString(),
+        location: "Parque de la 93, Bogotá",
+        price: 150000,
+        isFree: false,
+        eventType: "presencial",
+        image: "https://images.unsplash.com/photo-1511192336575-5a79af67a629?auto=format&q=80",
+        category: "Música"
+      },
+      {
+        id: 2,
+        name: "Exposición de Arte Digital",
+        description: "Muestra interactiva de las últimas tendencias en arte digital",
+        date: new Date("2024-03-20T10:00:00").toISOString(),
+        location: "Museo de Arte Moderno, Medellín",
+        price: 45000,
+        isFree: false,
+        eventType: "presencial",
+        image: "https://images.unsplash.com/photo-1547826039-bfc35e0f1ea8?auto=format&q=80",
+        category: "Arte"
       }
     ];
   }
@@ -77,35 +114,39 @@ class FixStorage {
     return [
       {
         id: 1,
-        name: "Óleo sobre lienzo - Atardecer",
-        price: 450000,
-        image: "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=800&auto=format",
-        artistName: "Maria González",
-        category: "Pintura"
-      },
-      {
-        id: 2,
         name: "Guitarra Acústica Artesanal",
-        price: 890000,
-        image: "https://images.unsplash.com/photo-1556449895-a33c9dba33dd?w=800&auto=format",
-        artistName: "Carlos Rodríguez",
+        description: "Guitarra hecha a mano con maderas seleccionadas",
+        price: 2500000,
+        image: "https://images.unsplash.com/photo-1555638769-a5f99464b3c0?auto=format&q=80",
+        artistName: "Carlos Martínez",
         category: "Instrumentos"
       },
       {
+        id: 2,
+        name: "Óleo sobre Lienzo - Atardecer Urbano",
+        description: "Obra original, técnica mixta",
+        price: 1800000,
+        image: "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&q=80",
+        artistName: "María González",
+        category: "Pintura"
+      },
+      {
         id: 3,
-        name: "Arte y Cultura en Colombia - Libro",
-        price: 85000,
-        image: "https://images.unsplash.com/photo-1589998059171-988d887df646?w=800&auto=format",
-        artistName: "Editorial Cultural",
-        category: "Libros"
+        name: "Arte Digital - Cosmos NFT",
+        description: "Colección limitada de arte digital",
+        price: 500000,
+        image: "https://images.unsplash.com/photo-1563089145-599997674d42?auto=format&q=80",
+        artistName: "Digital Dreams Studio",
+        category: "Arte Digital"
       },
       {
         id: 4,
-        name: "Escultura en Bronce - Libertad",
-        price: 1200000,
-        image: "https://images.unsplash.com/photo-1561839561-b13bcfe95249?w=800&auto=format",
-        artistName: "Ana Martinez",
-        category: "Escultura"
+        name: "Libro - Historia del Arte Colombiano",
+        description: "Edición especial ilustrada",
+        price: 180000,
+        image: "https://images.unsplash.com/photo-1589998059171-988d887df646?auto=format&q=80",
+        artistName: "Editorial Cultura",
+        category: "Libros"
       }
     ];
   }
