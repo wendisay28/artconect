@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import BlogManagement from "../components/blog-management";
+import { useQuery, QueryClient } from "@tanstack/react-query";
 import { useLocation } from "@/context/location-context";
 import BannerCarousel from "@/components/banner-carousel";
 import ArtistCard from "@/components/artist-card";
@@ -8,12 +9,12 @@ import EventCard from "@/components/event-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/hooks/use-toast";
 import {
   ChevronRight,
   ChevronLeft,
-  Search,
+  Plus,
   Bell,
   BookmarkCheck,
   Share2,
@@ -48,6 +49,9 @@ interface BlogPost {
   excerpt: string;
   imageUrl?: string;
   date: string;
+  likes: number;
+  dislikes: number;
+  views: number;
 }
 
 interface Product {
@@ -66,16 +70,28 @@ interface BannerItem {
   subtitle: string;
 }
 
+interface UserProfile {
+  id: number;
+  firebaseUid: string;
+  email: string;
+  displayName: string;
+  role: string;
+}
 export default function HomePage() {
   const { locationData } = useLocation();
-  const { toast } = useToast();
+  const [isManagingBlog, setIsManagingBlog] = useState(false);
+  const [isCreatingPost, setIsCreatingPost] = useState(false);
+  const [newPostTitle, setNewPostTitle] = useState("");
+  const [newPostContent, setNewPostContent] = useState("");
+  const [newPostImage, setNewPostImage] = useState<File | null>(null);
   const [activeBlogIndex, setActiveBlogIndex] = useState(0);
 
+  const queryClient = new QueryClient();
+  const { toast } = useToast();
   const { data: featuredEvents, isLoading: isLoadingEvents } = useQuery<
     Event[]
   >({
     queryKey: ["/api/events/featured"],
-    throwOnError: false,
   });
 
   const { data: recommendedArtists, isLoading: isLoadingArtists } = useQuery<
@@ -86,7 +102,6 @@ export default function HomePage() {
       locationData?.coordinates?.latitude,
       locationData?.coordinates?.longitude,
     ],
-    throwOnError: false,
   });
 
   const { data: nearbyEvents, isLoading: isLoadingNearbyEvents } = useQuery<
@@ -97,20 +112,24 @@ export default function HomePage() {
       locationData?.coordinates?.latitude,
       locationData?.coordinates?.longitude,
     ],
-    throwOnError: false,
   });
 
-  const { data: blogPosts, isLoading: isLoadingBlogPosts } = useQuery<
-    BlogPost[]
+  const { data: userProfile, isLoading: isLoadingProfile } = useQuery<
+    UserProfile
   >({
+    queryKey: ["/api/users/profile"],
+  });
+
+  const { data: blogPosts, isLoading: isLoadingBlogPosts } = useQuery<BlogPost[]>({
     queryKey: ["/api/blog/posts"],
-    throwOnError: false,
   });
 
   const { data: products, isLoading: isLoadingProducts } = useQuery<Product[]>({
     queryKey: ["/api/products"],
-    throwOnError: false,
   });
+
+  const isArtist = userProfile?.role === "artist";
+  console.log("userProfile", userProfile);
 
   const handleSaveEvent = (id: string) => {
     toast({
@@ -127,6 +146,46 @@ export default function HomePage() {
     });
   };
 
+  const handleCreatePost = async () => {
+    if (!newPostTitle || !newPostContent) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Por favor, completa todos los campos.",
+      });
+      return;
+    }
+
+    // Aquí deberías implementar la lógica para enviar los datos al backend
+    console.log("Creando nueva publicación:", {
+      title: newPostTitle,
+      content: newPostContent,
+      image: newPostImage,
+    });
+
+    // Mostrar un mensaje de éxito y limpiar el formulario
+    toast({
+      title: "Publicación creada",
+      description: "Tu nueva publicación ha sido creada con éxito.",
+    });
+    setNewPostTitle("");
+    setNewPostContent("");
+    setNewPostImage(null);
+    setIsCreatingPost(false);
+
+    // Recargar los datos del blog después de crear una nueva publicación
+    queryClient.invalidateQueries({ queryKey: ["/api/blog/posts"] });
+  };
+
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setNewPostImage(file);
+    } else {
+      setNewPostImage(null);
+    }
+  };
   // Placeholders para imágenes en caso de que no se provea una URL
   const PLACEHOLDER_IMAGES = {
     event:
@@ -144,22 +203,15 @@ export default function HomePage() {
   const safeBlogPosts = blogPosts || [];
   const safeProducts = products || [];
 
+
   return (
     <div className="container mx-auto px-4 py-6">
       {/* Header with logo and search */}
-      <header className="flex justify-between items-center mb-6">
-        <h1 className="font-bold text-2xl text-primary">BuscArt</h1>
-
-        <div className="flex items-center space-x-2">
           <Link href="/search">
             <Button variant="ghost" size="icon" className="rounded-full">
               <Search className="h-5 w-5" />
             </Button>
           </Link>
-          <Link href="/chat">
-            <Button variant="ghost" size="icon" className="rounded-full">
-              <MessageSquare className="h-5 w-5" />
-            </Button>
           </Link>
           <Button variant="ghost" size="icon" className="rounded-full">
             <Bell className="h-5 w-5" />
@@ -167,6 +219,7 @@ export default function HomePage() {
         </div>
       </header>
 
+      {/* Banner Section */}
       {/* Banner Section */}
       <section className="mb-8">
         {isLoadingEvents ? (
@@ -274,7 +327,7 @@ export default function HomePage() {
               </p>
               <p className="text-sm text-muted-foreground mt-1">
                 Intenta cambiar tu ubicación o buscar en un área más amplia
-              </p>
+            </p>
             </CardContent>
           </Card>
         ) : (
@@ -312,7 +365,18 @@ export default function HomePage() {
             </span>
           </Link>
         </div>
+        {userProfile && userProfile.role === "artist" && (
+          <Button
+            className="mb-4"
+            onClick={() => {
+              setIsManagingBlog(true);
+            }}
+          >
+            Manage Blog
+          </Button>
+        )}
 
+        {isManagingBlog ? ( <BlogManagement artistId={userProfile.id} /> ) : (
         {isLoadingBlogPosts ? (
           <div className="relative">
             <Skeleton className="h-[320px] w-full rounded-lg" />
@@ -322,8 +386,7 @@ export default function HomePage() {
             <div className="absolute top-1/2 right-4 -translate-y-1/2 z-10">
               <Skeleton className="h-10 w-10 rounded-full" />
             </div>
-          </div>
-        ) : (
+          </div> ) : (
           <div className="relative">
             {safeBlogPosts.length > 0 && (
               <div className="overflow-hidden rounded-lg">
@@ -418,7 +481,7 @@ export default function HomePage() {
                 </div>
               </div>
             )}
-          </div>
+          </div> )}
         )}
       </section>
 
